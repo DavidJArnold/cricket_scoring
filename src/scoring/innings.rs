@@ -1,16 +1,27 @@
 use std::fmt;
 
-use super::{player::Player, BallOutcome, CurrentScore};
+use super::{player::Team, BallOutcome, CurrentScore};
 
 pub struct Innings {
     pub score: CurrentScore,
-    pub batting_team: [Player; 11],
-    pub bowling_team: [Player; 11],
+    pub batting_team: Team,
+    pub bowling_team: Team,
     pub on_strike: usize,
     pub off_strike: usize,
 }
 
 impl Innings {
+    #[must_use]
+    pub fn new(batting_team: Team, bowling_team: Team) -> Innings {
+        Innings {
+            score: CurrentScore::new(),
+            batting_team,
+            bowling_team,
+            on_strike: 0,
+            off_strike: 1,
+        }
+    }
+
     pub fn over(&mut self) {
         self.score.over();
         (self.on_strike, self.off_strike) = (self.off_strike, self.on_strike);

@@ -2,7 +2,7 @@ use std::{char, fs::read_to_string};
 
 use cricket_scoring::error::BallString;
 use cricket_scoring::scoring::{
-    innings::Innings, player::Player, BallEvents, BallOutcome, CurrentScore,
+    innings::Innings, player::Player, BallEvents, BallOutcome
 };
 
 fn parse(ball: &str) -> Result<BallOutcome, BallString> {
@@ -89,7 +89,6 @@ fn parse(ball: &str) -> Result<BallOutcome, BallString> {
 }
 
 fn main() {
-    let current_score: CurrentScore = CurrentScore::new();
     let input: String = read_to_string("balls.txt").unwrap();
     let mut team: Vec<Player> = vec![];
     let a: char = 'A';
@@ -99,13 +98,7 @@ fn main() {
         ));
     }
     println!("{:?}", team);
-    let mut innings: Innings = Innings {
-        score: current_score,
-        batting_team: team.clone().try_into().unwrap(),
-        bowling_team: team.try_into().unwrap(),
-        on_strike: 0,
-        off_strike: 1,
-    };
+    let mut innings = Innings::new(team.clone().try_into().unwrap(), team.try_into().unwrap());
     for ball_desc in input.split('\n') {
         if ball_desc.len() == 1 && ball_desc.starts_with('N') {
             innings.over();

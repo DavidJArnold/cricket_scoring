@@ -10,6 +10,8 @@ pub struct Player {
     pub out: bool,
 }
 
+pub type Team = [Player; 11];
+
 impl Player {
     #[must_use]
     pub fn new(name: String) -> Self {

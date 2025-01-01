@@ -2,7 +2,7 @@ use std::char;
 
 use cricket_scoring::error::BallString;
 use cricket_scoring::scoring::{
-    innings::Innings, player::Player, BallEvents, BallOutcome, CurrentScore,
+    innings::Innings, player::Player, BallEvents, BallOutcome
 };
 
 fn parse(ball: &str) -> Result<BallOutcome, BallString> {
@@ -89,7 +89,6 @@ fn parse(ball: &str) -> Result<BallOutcome, BallString> {
 }
 
 fn main() {
-    let current_score: CurrentScore = CurrentScore::new();
     let mut team: Vec<Player> = vec![];
     let a: char = 'A';
     for idx in 0..11 {
@@ -98,13 +97,7 @@ fn main() {
         ));
     }
     println!("{:?}", team);
-    let mut innings: Innings = Innings {
-        score: current_score,
-        batting_team: team.clone().try_into().unwrap(),
-        bowling_team: team.try_into().unwrap(),
-        on_strike: 0,
-        off_strike: 1,
-    };
+    let mut innings: Innings = Innings::new(team.clone().try_into().unwrap(), team.try_into().unwrap());
     println!(". or digit for runs, W (wicket), X (wide), O (no ball), B (bye), L (leg bye), F (four), S (six), N (over)");
     loop {
         let mut ball_desc = String::new();
