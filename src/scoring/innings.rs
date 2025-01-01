@@ -48,6 +48,9 @@ impl Innings {
             striker.out = true;
             self.on_strike = self.on_strike.max(self.off_strike) + 1;
         }
+        if ball_outcome.runs % 2 == 1 {
+            (self.on_strike, self.off_strike) = (self.off_strike, self.on_strike);
+        }
     }
 }
 
