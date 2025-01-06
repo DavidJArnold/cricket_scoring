@@ -6,11 +6,6 @@ use serde::Deserialize;
 mod custom_deserialisers;
 use crate::cricsheet_lib::custom_deserialisers::{deserialize_to_string, deserialize_to_option_string};
 
-// Does not curently parse:
-//  - missing from info (complex type, either string or object)
-//  - group from event from info (optional string, sometimes given as int)
-// These will require additional custom deserialisers
-
 #[derive(Deserialize, Debug)]
 pub struct Cricsheet {
     pub meta: CricsheetMeta,
@@ -35,7 +30,7 @@ pub struct CricsheetInfo {
     pub gender: String,
     pub match_type: String,
     pub match_type_number: Option<i32>,
-    // pub missing: Option<Vec<String>>,
+    pub missing: Option<Vec<Missing>>,
     pub officials: Option<Officials>,
     pub outcome: Outcome,
     pub overs: Option<i32>,
@@ -187,6 +182,18 @@ pub struct Event {
     #[serde(default, deserialize_with = "deserialize_to_option_string")]
     pub group: Option<String>,
     pub stage: Option<String>,
+}
+
+#[derive(Deserialize, Debug)]
+#[serde(untagged)]
+pub enum Missing {
+    StringField(String),
+    Powerplays(MissingPowerplays),
+}
+
+#[derive(Deserialize, Debug)]
+pub struct MissingPowerplays {
+    powerplays: HashMap<String, Vec<String>>,
 }
 
 #[derive(Deserialize, Debug)]
