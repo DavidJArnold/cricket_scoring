@@ -1,12 +1,8 @@
 #![allow(dead_code)]
 
+use chrono::NaiveDate;
 use serde::Deserialize;
 use std::collections::HashMap;
-
-mod custom_deserialisers;
-use crate::cricsheet_lib::custom_deserialisers::{
-    deserialize_to_option_string, deserialize_to_string,
-};
 
 #[derive(Deserialize, Debug)]
 pub struct Cricsheet {
@@ -27,7 +23,7 @@ pub struct CricsheetInfo {
     pub balls_per_over: i32,
     pub bowl_out: Option<Vec<BowlOut>>,
     pub city: Option<String>,
-    pub dates: Vec<String>,
+    pub dates: Vec<NaiveDate>,
     pub event: Option<Event>,
     pub gender: String,
     pub match_type: String,
@@ -39,7 +35,6 @@ pub struct CricsheetInfo {
     pub player_of_match: Option<Vec<String>>,
     pub players: HashMap<String, Vec<String>>,
     pub registry: Registry,
-    #[serde(deserialize_with = "deserialize_to_string")]
     pub season: String,
     pub supersubs: Option<HashMap<String, String>>,
     pub team_type: String,
@@ -78,7 +73,6 @@ pub struct Powerplay {
 
 #[derive(Deserialize, Debug)]
 pub struct MiscountedOver {
-    #[serde(deserialize_with = "deserialize_to_string")]
     pub balls: String,
     pub umpire: Option<String>,
 }
@@ -181,7 +175,6 @@ pub struct BowlOut {
 pub struct Event {
     pub name: String,
     pub match_number: Option<i32>,
-    #[serde(default, deserialize_with = "deserialize_to_option_string")]
     pub group: Option<String>,
     pub stage: Option<String>,
 }
