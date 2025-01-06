@@ -4,7 +4,7 @@ use std::collections::HashMap;
 use serde::Deserialize;
 
 mod custom_deserialisers;
-use crate::cricsheet_lib::custom_deserialisers::deserialize_to_string;
+use crate::cricsheet_lib::custom_deserialisers::{deserialize_to_string, deserialize_to_option_string};
 
 // Does not curently parse:
 //  - missing from info (complex type, either string or object)
@@ -184,7 +184,8 @@ pub struct BowlOut {
 pub struct Event {
     pub name: String,
     pub match_number: Option<i32>,
-    // pub group: Option<String>,
+    #[serde(default, deserialize_with = "deserialize_to_option_string")]
+    pub group: Option<String>,
     pub stage: Option<String>,
 }
 

@@ -19,7 +19,8 @@ fn main() {
         let json: Result<serde_json::Value, serde_json::Error> = serde_json::from_str(&data);
         if json.is_err() { println!("JSON Error: {:?}", x.path()) };
         let cricsheet: Result<Cricsheet, serde_json::Error> = serde_json::from_str(&data);
-        if cricsheet.is_err() { println!("DATA Error: {:?}", x.path()) };
+        let _ = cricsheet.unwrap();
+        // if cricsheet.is_err() { println!("DATA Error: {:?} {:?}", x.path(), cricsheet.err().unwrap()) };
         read_files += 1;
         if read_files % 100 == 0 {
             println!("{read_files}/{num_files}");
