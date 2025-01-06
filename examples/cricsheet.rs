@@ -17,7 +17,9 @@ fn main() {
         // let mut file = File::open("examples/game.json").expect("");
         let _ = &file.read_to_string(&mut data);
         let json: Result<serde_json::Value, serde_json::Error> = serde_json::from_str(&data);
-        if json.is_err() { println!("JSON Error: {:?}", x.path()) };
+        if json.is_err() {
+            println!("JSON Error: {:?}", x.path());
+        };
         let cricsheet: Result<Cricsheet, serde_json::Error> = serde_json::from_str(&data);
         let _ = cricsheet.unwrap();
         // if cricsheet.is_err() { println!("DATA Error: {:?} {:?}", x.path(), cricsheet.err().unwrap()) };

@@ -1,9 +1,7 @@
 use std::{char, fs::read_to_string};
 
 use cricket_scoring::error::BallString;
-use cricket_scoring::scoring::{
-    innings::Innings, player::Player, BallEvents, BallOutcome
-};
+use cricket_scoring::scoring::{innings::Innings, player::Player, BallEvents, BallOutcome};
 
 fn parse(ball: &str) -> Result<BallOutcome, BallString> {
     // basic format is runs followed by extra events:

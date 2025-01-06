@@ -1,10 +1,12 @@
-#![ allow(dead_code)]
+#![allow(dead_code)]
 
-use std::collections::HashMap;
 use serde::Deserialize;
+use std::collections::HashMap;
 
 mod custom_deserialisers;
-use crate::cricsheet_lib::custom_deserialisers::{deserialize_to_string, deserialize_to_option_string};
+use crate::cricsheet_lib::custom_deserialisers::{
+    deserialize_to_option_string, deserialize_to_string,
+};
 
 #[derive(Deserialize, Debug)]
 pub struct Cricsheet {
@@ -107,11 +109,11 @@ pub struct Delivery {
 
 #[derive(Deserialize, Debug)]
 pub struct Extras {
-    pub byes:Option<i32>,
-    pub legbyes:Option<i32>,
-    pub noballs:Option<i32>,
-    pub penalty:Option<i32>,
-    pub wides:Option<i32>,
+    pub byes: Option<i32>,
+    pub legbyes: Option<i32>,
+    pub noballs: Option<i32>,
+    pub penalty: Option<i32>,
+    pub wides: Option<i32>,
 }
 
 #[derive(Deserialize, Debug)]
@@ -223,7 +225,7 @@ pub struct Method {
 
 #[derive(Deserialize, Debug)]
 pub struct Registry {
-    pub people: HashMap<String, String>
+    pub people: HashMap<String, String>,
 }
 
 #[derive(Deserialize, Debug)]

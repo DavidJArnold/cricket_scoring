@@ -1,6 +1,6 @@
-use std::fmt;
-use serde::Deserializer;
 use serde::de;
+use serde::Deserializer;
+use std::fmt;
 
 struct DeserializeStringVisitor;
 
