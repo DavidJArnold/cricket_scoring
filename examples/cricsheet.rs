@@ -1,11 +1,12 @@
 mod cricsheet_lib;
 use cricsheet_lib::Cricsheet;
+use serde_json::Value;
 use std::{collections::HashMap, fs::File, io::Read};
 
 
 fn main() {
     // record field with error, error description and each record which raises the error
-    let mut errors: HashMap<[String; 2], Vec<String>> = HashMap::new();
+    let mut errors: HashMap<[String; 3], Vec<String>> = HashMap::new();
 
     // directory containing json game files
     let filename = "examples/all_matches";
@@ -36,10 +37,14 @@ fn main() {
         if cricsheet.is_err() {
             // get information about the error
             let err_path: Result<Cricsheet, _> = serde_path_to_error::deserialize(&mut serde_json::Deserializer::from_str(&data));
+            let series = match serde_json::from_str::<Value>(&data).unwrap().get("info").unwrap().get("event") {
+                Some(event) => event.get("name").unwrap().to_string(),
+                None => String::new(),
+            };
             let game = x.path().file_stem().unwrap().to_str().unwrap().to_string();
             let field: String = err_path.err().unwrap().path().to_string().chars().filter(|&c| !c.is_digit(10)).collect();
             let msg = format!("{}", cricsheet.err().unwrap()).chars().filter(|&c| !c.is_digit(10)).collect();
-            let key = [field, msg];
+            let key = [field, series, msg];
             // load into errors or extend existing value
             let val = errors.get_mut(&key);
             match val {
