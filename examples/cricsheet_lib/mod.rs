@@ -1,5 +1,6 @@
 #![allow(dead_code)]
 
+use chrono::NaiveDate;
 use serde::Deserialize;
 use std::collections::HashMap;
 
@@ -27,7 +28,7 @@ pub struct CricsheetInfo {
     pub balls_per_over: i32,
     pub bowl_out: Option<Vec<BowlOut>>,
     pub city: Option<String>,
-    pub dates: Vec<String>,
+    pub dates: Vec<NaiveDate>,
     pub event: Option<Event>,
     pub gender: String,
     pub match_type: String,
@@ -89,13 +90,13 @@ pub struct Target {
     pub runs: Option<i32>,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct Over {
     pub over: i32,
     pub deliveries: Vec<Delivery>,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct Delivery {
     pub batter: String,
     pub bowler: String,
@@ -107,7 +108,7 @@ pub struct Delivery {
     pub wickets: Option<Vec<Wicket>>,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct Extras {
     pub byes: Option<i32>,
     pub legbyes: Option<i32>,
@@ -116,14 +117,14 @@ pub struct Extras {
     pub wides: Option<i32>,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct Replacement {
     pub role: Option<Vec<ReplacementRole>>,
     #[serde(rename = "match")]
     pub game: Option<Vec<ReplacementMatch>>,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct ReplacementRole {
     #[serde(rename = "in")]
     pub player_in: String,
@@ -132,7 +133,7 @@ pub struct ReplacementRole {
     pub role: String,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct ReplacementMatch {
     #[serde(rename = "in")]
     pub player_in: String,
@@ -141,7 +142,7 @@ pub struct ReplacementMatch {
     pub team: String,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct Review {
     pub batter: String,
     pub by: String,
@@ -150,7 +151,7 @@ pub struct Review {
     pub umpires_call: Option<bool>,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct Runs {
     pub batter: i32,
     pub extras: i32,
@@ -158,14 +159,14 @@ pub struct Runs {
     pub total: i32,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct Wicket {
     pub fielders: Option<Vec<Fielder>>,
     pub kind: String,
     pub player_out: String,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct Fielder {
     pub name: Option<String>,
     pub substitute: Option<bool>,
