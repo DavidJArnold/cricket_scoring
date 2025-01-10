@@ -1,6 +1,5 @@
 pub mod innings;
 pub mod player;
-mod scoring_util;
 
 use std::fmt;
 
