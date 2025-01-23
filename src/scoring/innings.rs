@@ -58,8 +58,11 @@ impl fmt::Display for Innings {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let mut batters = String::new();
         for batter in self.batting_team.clone() {
-            batters.push_str(&format!("{batter}"));
-            batters.push('\n');
+            if batter.out || batter.balls_faced != 0 {
+                // ony show batters who batted
+                batters.push_str(&format!("{batter}"));
+                batters.push('\n');
+            }
         }
         write!(f, "{}\n{}", self.score.summary(), batters)
     }

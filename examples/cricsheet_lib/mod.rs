@@ -2,7 +2,7 @@
 
 use chrono::NaiveDate;
 use serde::Deserialize;
-use std::collections::HashMap;
+use std::{collections::HashMap, fmt};
 
 mod custom_deserialisers;
 use crate::cricsheet_lib::custom_deserialisers::{
@@ -222,6 +222,26 @@ pub struct Method {
     pub innings: Option<i32>,
     pub runs: Option<i32>,
     pub wickets: Option<i32>,
+}
+
+impl fmt::Display for Method {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        if self.runs.is_some() {
+            if self.innings.is_some() {
+                return write!(f, "Won by an innings and {} runs", self.runs.unwrap());
+            } else {
+                return write!(f, "Won by {} runs", self.runs.unwrap());
+            }
+        }
+        if self.wickets.is_some() {
+            if self.innings.is_some() {
+                return write!(f, "Won by an innings and {} wickets", self.wickets.unwrap());
+            } else {
+                return write!(f, "Won by {} wickets", self.wickets.unwrap());
+            }
+        }
+        panic!("No winning information");
+    }
 }
 
 #[derive(Deserialize, Debug)]

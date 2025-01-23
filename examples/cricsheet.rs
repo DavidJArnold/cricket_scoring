@@ -2,7 +2,8 @@ mod cricsheet_lib;
 use cricsheet_lib::Cricsheet;
 use std::{fs::File, io::Read};
 
-use cricket_scoring::scoring::{innings::Innings, player::Player, BallEvents, BallOutcome};
+use cricket_scoring::scoring::{innings::Innings, player::Player};
+use cricket_scoring::scoring::ball::{BallEvents, BallOutcome};
 
 fn main() {
     let filename = "examples/all_matches";
@@ -78,11 +79,18 @@ fn main() {
                 }
                 innings.over();
             }
-            println!("{}", innings);
+            println!("{}\n{}", innings_data.team, innings);
         }
+        
+        let by = match cricsheet.info.outcome.by {
+            Some(x) => format!("{}", &x),
+            None => format!("No winner"),
+        };
+        println!("{} {by} {}", cricsheet.info.outcome.winner.unwrap_or("NO WINNER".to_string()), cricsheet.info.outcome.method.unwrap_or(String::new()));
         read_files += 1;
         if read_files % 5 == 0 {
             println!("{read_files}/{num_files}");
+            break;
         }
     }
 }
