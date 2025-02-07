@@ -1,8 +1,9 @@
 use std::{char, fs::read_to_string};
 
 use cricket_scoring::error::BallString;
-use cricket_scoring::scoring::{innings::Innings, player::Player};
 use cricket_scoring::scoring::ball::{BallEvents, BallOutcome};
+use cricket_scoring::scoring::player::Team;
+use cricket_scoring::scoring::{innings::Innings, player::Player};
 
 fn parse(ball: &str) -> Result<BallOutcome, BallString> {
     // basic format is runs followed by extra events:
@@ -97,7 +98,16 @@ fn main() {
         ));
     }
     println!("{:?}", team);
-    let mut innings = Innings::new(team.clone().try_into().unwrap(), team.try_into().unwrap());
+    let mut innings = Innings::new(
+        Team {
+            name: "Team A".to_string(),
+            players: team.clone(),
+        },
+        Team {
+            name: "Team B".to_string(),
+            players: team.clone(),
+        },
+    );
     for ball_desc in input.split('\n') {
         if ball_desc.len() == 1 && ball_desc.starts_with('N') {
             innings.over();

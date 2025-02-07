@@ -10,7 +10,11 @@ pub struct Player {
     pub out: bool,
 }
 
-pub type Team = [Player; 11];
+#[derive(Debug, Clone)]
+pub struct Team {
+    pub players: Vec<Player>,
+    pub name: String,
+}
 
 impl Player {
     #[must_use]

@@ -8,6 +8,7 @@ pub struct Innings {
     pub bowling_team: Team,
     pub on_strike: usize,
     pub off_strike: usize,
+    pub finished: bool,
 }
 
 impl Innings {
@@ -19,6 +20,7 @@ impl Innings {
             bowling_team,
             on_strike: 0,
             off_strike: 1,
+            finished: false,
         }
     }
 
@@ -33,7 +35,7 @@ impl Innings {
     /// This shouldn't happen...
     pub fn score_ball(&mut self, ball_outcome: &BallOutcome) {
         self.score.score_ball(ball_outcome);
-        let striker = self.batting_team.get_mut(self.on_strike).unwrap();
+        let striker = self.batting_team.players.get_mut(self.on_strike).unwrap();
         if !ball_outcome.wide && !ball_outcome.no_ball {
             striker.balls_faced += 1;
         }
@@ -47,6 +49,9 @@ impl Innings {
         if ball_outcome.wicket {
             striker.out = true;
             self.on_strike = self.on_strike.max(self.off_strike) + 1;
+            if self.on_strike >= self.batting_team.players.len() {
+                self.finished = true;
+            }
         }
         if ball_outcome.runs % 2 == 1 {
             (self.on_strike, self.off_strike) = (self.off_strike, self.on_strike);
@@ -57,7 +62,7 @@ impl Innings {
 impl fmt::Display for Innings {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let mut batters = String::new();
-        for batter in self.batting_team.clone() {
+        for batter in self.batting_team.players.clone() {
             if batter.out || batter.balls_faced != 0 {
                 // ony show batters who batted
                 batters.push_str(&format!("{batter}"));

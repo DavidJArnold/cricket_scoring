@@ -1,6 +1,7 @@
 #![allow(dead_code)]
 
 use chrono::NaiveDate;
+use cricket_scoring::scoring::player::{Player, Team};
 use serde::Deserialize;
 use std::{collections::HashMap, fmt};
 
@@ -23,7 +24,7 @@ pub struct CricsheetMeta {
     pub revision: i32,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct CricsheetInfo {
     pub balls_per_over: i32,
     pub bowl_out: Option<Vec<BowlOut>>,
@@ -46,7 +47,24 @@ pub struct CricsheetInfo {
     pub team_type: String,
     pub teams: Vec<String>,
     pub toss: Toss,
-    pub vene: Option<String>,
+    pub venue: Option<String>,
+}
+
+impl CricsheetInfo {
+    pub fn team(self, name: &String) -> Team {
+        Team {
+            name: name.clone(),
+            players: self
+                .players
+                .get(name)
+                .unwrap()
+                .iter()
+                .map(|x| Player::new(x.clone()))
+                .collect::<Vec<Player>>()
+                .try_into()
+                .unwrap(),
+        }
+    }
 }
 
 #[derive(Deserialize, Debug)]
@@ -172,13 +190,13 @@ pub struct Fielder {
     pub substitute: Option<bool>,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct BowlOut {
     pub bowler: String,
     pub outcome: String,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct Event {
     pub name: String,
     pub match_number: Option<i32>,
@@ -187,19 +205,19 @@ pub struct Event {
     pub stage: Option<String>,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 #[serde(untagged)]
 pub enum Missing {
     StringField(String),
     Powerplays(MissingPowerplays),
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct MissingPowerplays {
     powerplays: HashMap<String, Vec<String>>,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct Officials {
     pub match_referees: Option<Vec<String>>,
     pub reserve_umpires: Option<Vec<String>>,
@@ -207,7 +225,7 @@ pub struct Officials {
     pub umpires: Option<Vec<String>>,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct Outcome {
     pub by: Option<Method>,
     pub bowl_out: Option<String>,
@@ -217,7 +235,7 @@ pub struct Outcome {
     pub winner: Option<String>,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct Method {
     pub innings: Option<i32>,
     pub runs: Option<i32>,
@@ -244,12 +262,12 @@ impl fmt::Display for Method {
     }
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct Registry {
     pub people: HashMap<String, String>,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct Toss {
     pub decision: String,
     pub winner: String,
