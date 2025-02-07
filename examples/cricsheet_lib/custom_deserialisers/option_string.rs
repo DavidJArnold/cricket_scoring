@@ -33,6 +33,7 @@ impl de::Visitor<'_> for DeserializeOptionStringVisitor {
     }
 }
 
+#[allow(clippy::module_name_repetitions)]
 pub fn deserialize_to_option_string<'de, D>(deserializer: D) -> Result<Option<String>, D::Error>
 where
     D: Deserializer<'de>,

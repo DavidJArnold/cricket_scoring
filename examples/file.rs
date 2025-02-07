@@ -35,13 +35,13 @@ fn parse(ball: &str) -> Result<BallOutcome, BallString> {
     // Therefore, a digit must appear with B or L to indicate how many byes/leg byes.
     //
     // TODO: Prevent duplicate letters/periods, verify ordering
+    const ALLOWED_CHARS: [char; 8] = ['.', 'W', 'X', 'B', 'L', 'O', 'F', 'S'];
 
     let mut ball_events = vec![];
 
     if ball.is_empty() {
         return Err(BallString::EmptyBallString);
     }
-    const ALLOWED_CHARS: [char; 8] = ['.', 'W', 'X', 'B', 'L', 'O', 'F', 'S'];
     for c in ball.chars() {
         if !(char::is_ascii_digit(&c) || ALLOWED_CHARS.contains(&c)) {
             return Err(BallString::InvalidBallStringCharacter(c));
@@ -94,10 +94,10 @@ fn main() {
     let a: char = 'A';
     for idx in 0..11 {
         team.push(Player::new(
-            String::from_utf8(vec![(a as usize + idx) as u8]).unwrap(),
+            String::from_utf8(vec![u8::try_from(a as usize + idx).unwrap()]).unwrap(),
         ));
     }
-    println!("{:?}", team);
+    println!("{team:?}");
     let mut innings = Innings::new(
         Team {
             name: "Team A".to_string(),
@@ -122,5 +122,5 @@ fn main() {
             break;
         }
     }
-    println!("{}\n", innings);
+    println!("{innings}\n");
 }

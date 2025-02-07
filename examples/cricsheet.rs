@@ -1,5 +1,5 @@
 mod cricsheet_lib;
-use cricket_scoring::scoring::game::GameMeta;
+use cricket_scoring::scoring::game::Meta;
 use cricket_scoring::scoring::player::Team;
 use cricsheet_lib::{Cricsheet, Delivery};
 use std::collections::HashMap;
@@ -61,16 +61,15 @@ fn main() {
         //
         // First get the teams
         let cricsheet_teams = cricsheet.info.teams.clone();
-        let teams: HashMap<String, Team> = HashMap::from_iter(
-            cricsheet_teams
-                .iter()
-                .map(|x| (x.clone(), cricsheet.info.clone().team(&x))),
-        );
+        let teams: HashMap<String, Team> = cricsheet_teams
+            .iter()
+            .map(|x| (x.clone(), cricsheet.info.clone().team(x)))
+            .collect();
 
         // then initialise the game
         let mut cricket_match = Game {
             innings: vec![],
-            meta: GameMeta {
+            meta: Meta {
                 venue: cricsheet.info.venue,
             },
             outcome: None,
@@ -85,8 +84,7 @@ fn main() {
                 .info
                 .teams
                 .iter()
-                .filter(|x| **x != batting_team_name)
-                .next()
+                .find(|x| **x != batting_team_name)
                 .unwrap()
                 .clone();
             let mut innings = Innings::new(
@@ -111,7 +109,7 @@ fn main() {
 
         let by = match cricsheet.info.outcome.by {
             Some(x) => format!("{}", &x),
-            None => format!("No winner"),
+            None => "No winner".to_string(),
         };
         println!(
             "CRICSHEET: {} {by} {}",
@@ -120,7 +118,7 @@ fn main() {
                 .outcome
                 .winner
                 .unwrap_or("NO WINNER".to_string()),
-            cricsheet.info.outcome.method.unwrap_or(String::new())
+            cricsheet.info.outcome.method.unwrap_or_default()
         );
 
         let res = cricket_match.outcome.unwrap();

@@ -26,6 +26,7 @@ impl de::Visitor<'_> for DeserializeStringVisitor {
     }
 }
 
+#[allow(clippy::module_name_repetitions)]
 pub fn deserialize_to_string<'de, D>(deserializer: D) -> Result<String, D::Error>
 where
     D: Deserializer<'de>,

@@ -61,8 +61,6 @@ impl CricsheetInfo {
                 .iter()
                 .map(|x| Player::new(x.clone()))
                 .collect::<Vec<Player>>()
-                .try_into()
-                .unwrap(),
         }
     }
 }
@@ -247,16 +245,14 @@ impl fmt::Display for Method {
         if self.runs.is_some() {
             if self.innings.is_some() {
                 return write!(f, "Won by an innings and {} runs", self.runs.unwrap());
-            } else {
-                return write!(f, "Won by {} runs", self.runs.unwrap());
-            }
+            };
+            return write!(f, "Won by {} runs", self.runs.unwrap());
         }
         if self.wickets.is_some() {
             if self.innings.is_some() {
                 return write!(f, "Won by an innings and {} wickets", self.wickets.unwrap());
-            } else {
-                return write!(f, "Won by {} wickets", self.wickets.unwrap());
-            }
+            };
+            return write!(f, "Won by {} wickets", self.wickets.unwrap());
         }
         panic!("No winning information");
     }
