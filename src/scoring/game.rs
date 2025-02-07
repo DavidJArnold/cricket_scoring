@@ -23,7 +23,30 @@ pub struct GameMeta {
 }
 
 impl Game {
-    pub fn score(&mut self) -> () {
+    fn get_margin(
+        &self,
+        winning_team: String,
+        losing_team: String,
+        batting_team: String,
+        scores: HashMap<String, i32>,
+    ) -> Outcome {
+        let mut runs_margin = None;
+        let mut wickets_margin = None;
+        if winning_team == batting_team {
+            wickets_margin = Some(1);
+        } else {
+            runs_margin =
+                Some(scores.get(&winning_team).unwrap() - scores.get(&losing_team).unwrap());
+        };
+        Outcome {
+            draw: false,
+            tie: false,
+            winner: Some(winning_team),
+            runs_margin,
+            wickets_margin,
+        }
+    }
+    pub fn score(&mut self) {
         let mut scores: HashMap<String, i32> = HashMap::new();
         let mut teams: Vec<String> = vec![];
         let mut batting_team = String::new();
@@ -53,40 +76,18 @@ impl Game {
         let team_a = teams[0].clone();
         let team_b = teams[1].clone();
 
-        if scores.get(&team_a).unwrap() > scores.get(&team_b).unwrap() {
-            let mut runs_margin = None;
-            let mut wickets_margin = None;
-            if team_a == batting_team {
-                wickets_margin = Some(1);
-            } else {
-                runs_margin = Some(scores.get(&team_a).unwrap() - scores.get(&team_b).unwrap());
-            };
-            self.outcome = Some(Outcome {
-                draw: false,
-                tie: false,
-                winner: Some(team_a),
-                runs_margin,
-                wickets_margin,
-            });
-        } else if scores.get(&team_a).unwrap() == scores.get(&team_b).unwrap() {
-            self.outcome = Some(Outcome {
+        self.outcome = match scores
+            .get(&team_a)
+            .unwrap()
+            .cmp(scores.get(&team_b).unwrap())
+        {
+            std::cmp::Ordering::Greater => {
+                Some(self.get_margin(team_a, team_b, batting_team, scores))
+            }
+            std::cmp::Ordering::Equal => Some(Outcome {
                 ..Default::default()
-            });
-        } else {
-            let mut runs_margin = None;
-            let mut wickets_margin = None;
-            if team_b == batting_team {
-                wickets_margin = Some(1);
-            } else {
-                runs_margin = Some(scores.get(&team_b).unwrap() - scores.get(&team_a).unwrap());
-            };
-            self.outcome = Some(Outcome {
-                draw: false,
-                tie: false,
-                winner: Some(team_b),
-                runs_margin,
-                wickets_margin,
-            });
+            }),
+            std::cmp::Ordering::Less => Some(self.get_margin(team_b, team_a, batting_team, scores)),
         };
     }
 }
