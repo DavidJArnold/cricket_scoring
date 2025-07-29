@@ -1,7 +1,8 @@
 use std::fmt;
 
-use super::{player::Team, BallOutcome, CurrentScore};
+use super::{player::Team, score::BallOutcome, score::CurrentScore};
 
+#[derive(Clone, Debug)]
 pub struct Innings {
     pub score: CurrentScore,
     pub batting_team: Team,
@@ -36,25 +37,34 @@ impl Innings {
     pub fn score_ball(&mut self, ball_outcome: &BallOutcome) {
         self.score.score_ball(ball_outcome);
         let striker = self.batting_team.players.get_mut(self.on_strike).unwrap();
-        if !ball_outcome.wide && !ball_outcome.no_ball {
+
+        if ball_outcome.wide.is_none() && ball_outcome.no_ball.is_none() {
             striker.balls_faced += 1;
-        }
-        striker.runs += ball_outcome.runs;
-        if ball_outcome.four {
-            striker.fours += 1;
-        }
-        if ball_outcome.six {
-            striker.sixes += 1;
-        }
-        if ball_outcome.wicket {
-            striker.out = true;
-            self.on_strike = self.on_strike.max(self.off_strike) + 1;
-            if self.on_strike >= self.batting_team.players.len() {
-                self.finished = true;
+            if ball_outcome.byes.is_none() && ball_outcome.leg_byes.is_none() {
+                striker.runs += ball_outcome.runs;
+                if ball_outcome.four {
+                    striker.fours += 1;
+                }
+                if ball_outcome.six {
+                    striker.sixes += 1;
+                }
             }
         }
+
         if ball_outcome.runs % 2 == 1 {
             (self.on_strike, self.off_strike) = (self.off_strike, self.on_strike);
+        }
+
+        if ball_outcome.wicket.is_some() {
+            let player_out = ball_outcome.wicket.clone().unwrap();
+            if player_out.contains(&striker.name) {
+                striker.out = true;
+                self.on_strike = self.on_strike.max(self.off_strike) + 1;
+            } else {
+                let non_striker = self.batting_team.players.get_mut(self.off_strike).unwrap();
+                non_striker.out = true;
+                self.off_strike = self.on_strike.max(self.off_strike) + 1;
+            };
         }
     }
 }

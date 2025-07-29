@@ -1,7 +1,14 @@
 #![allow(dead_code)]
 
+// Module used to parse cricsheet files into native types
+
 use chrono::NaiveDate;
-use cricket_scoring::scoring::player::{Player, Team};
+use cricket_scoring::scoring::{
+    ball::{BallEvents, BallOutcome},
+    game::{Game, Meta, Outcome as GameOutcome},
+    innings::Innings,
+    player::{Player, Team},
+};
 use serde::Deserialize;
 use std::{collections::HashMap, fmt};
 
@@ -15,6 +22,23 @@ pub struct Cricsheet {
     pub meta: CricsheetMeta,
     pub info: CricsheetInfo,
     pub innings: Vec<CricsheetInnings>,
+}
+
+impl Cricsheet {
+    pub fn create_game(&self) -> Game {
+        let cricsheet_teams = self.info.teams.clone();
+        let teams: HashMap<String, Team> = cricsheet_teams
+            .iter()
+            .map(|x| (x.clone(), self.info.clone().team(x)))
+            .collect();
+
+        Game::new(
+            Meta {
+                venue: self.info.venue.clone(),
+            },
+            teams,
+        )
+    }
 }
 
 #[derive(Deserialize, Debug)]
@@ -60,7 +84,7 @@ impl CricsheetInfo {
                 .unwrap()
                 .iter()
                 .map(|x| Player::new(x.clone()))
-                .collect::<Vec<Player>>()
+                .collect::<Vec<Player>>(),
         }
     }
 }
@@ -77,6 +101,54 @@ pub struct CricsheetInnings {
     pub miscounted_overs: Option<HashMap<String, MiscountedOver>>,
     pub target: Option<Target>,
     pub super_over: Option<bool>,
+}
+
+impl CricsheetInnings {
+    pub fn process_innings(&self, cricket_match: &mut Game) {
+        // initialise the Innings object
+        let batting_team_name = &self.team;
+        let mut batting_team: Option<Team> = None;
+        let mut bowling_team: Option<Team> = None;
+        for (team_name, team) in &cricket_match.teams {
+            if team_name == batting_team_name {
+                batting_team = Some(team.clone());
+            } else {
+                bowling_team = Some(team.clone());
+            }
+        }
+        let batting_team = batting_team.unwrap();
+        let bowling_team = bowling_team.unwrap();
+
+        let mut innings = Innings::new(batting_team.clone(), bowling_team.clone());
+
+        // check for penalty runs
+        if self.penalty_runs.is_some() {
+            innings.score.runs = self.penalty_runs.as_ref().unwrap().pre.unwrap_or_default();
+        }
+
+        // iterate through overs and balls
+        for over in self.overs.clone().unwrap_or_default() {
+            for ball in &over.deliveries {
+                let ball_outcome = ball.parse(
+                    batting_team.players.get(innings.on_strike).unwrap().clone(),
+                    batting_team
+                        .players
+                        .get(innings.off_strike)
+                        .unwrap()
+                        .clone(),
+                );
+                innings.score_ball(&ball_outcome);
+            }
+            innings.over();
+        }
+        innings.finished = true;
+
+        // check for penalty runs
+        if self.penalty_runs.is_some() {
+            innings.score.runs += self.penalty_runs.as_ref().unwrap().post.unwrap_or_default();
+        }
+        cricket_match.innings.push(innings.clone());
+    }
 }
 
 #[derive(Deserialize, Debug)]
@@ -122,6 +194,52 @@ pub struct Delivery {
     pub review: Option<Review>,
     pub runs: Runs,
     pub wickets: Option<Vec<Wicket>>,
+}
+
+impl Delivery {
+    pub fn parse(&self, striker: Player, non_striker: Player) -> BallOutcome {
+        let mut ball_events: Vec<BallEvents> = Vec::new();
+        if self.extras.is_some() {
+            if self.extras.clone().unwrap().byes.is_some() {
+                ball_events.push(BallEvents::Bye(self.extras.clone().unwrap().byes.unwrap()));
+            }
+            if self.extras.clone().unwrap().legbyes.is_some() {
+                ball_events.push(BallEvents::LegBye(
+                    self.extras.clone().unwrap().legbyes.unwrap(),
+                ));
+            }
+            if self.extras.clone().unwrap().wides.is_some() {
+                ball_events.push(BallEvents::Wide(
+                    self.extras.clone().unwrap().wides.unwrap(),
+                ));
+            }
+            if self.extras.clone().unwrap().noballs.is_some() {
+                ball_events.push(BallEvents::NoBall(
+                    self.extras.clone().unwrap().noballs.unwrap(),
+                ));
+            }
+        }
+        if self.wickets.is_some() {
+            ball_events.push(BallEvents::Wicket(
+                self.wickets
+                    .clone()
+                    .unwrap()
+                    .into_iter()
+                    .map(|x| x.player_out)
+                    .collect(),
+            ));
+        }
+        if self.runs.batter == 4 && !self.runs.non_boundary.unwrap_or(false) {
+            ball_events.push(BallEvents::Four);
+        }
+        if self.runs.batter == 6 && !self.runs.non_boundary.unwrap_or(false) {
+            ball_events.push(BallEvents::Six);
+        }
+
+        let ball_outcome = BallOutcome::new(self.runs.batter, ball_events, striker, non_striker);
+        ball_outcome.validate().unwrap();
+        ball_outcome
+    }
 }
 
 #[derive(Deserialize, Debug, Clone)]
@@ -223,17 +341,7 @@ pub struct Officials {
     pub umpires: Option<Vec<String>>,
 }
 
-#[derive(Deserialize, Debug, Clone)]
-pub struct Outcome {
-    pub by: Option<Method>,
-    pub bowl_out: Option<String>,
-    pub eliminator: Option<String>,
-    pub method: Option<String>,
-    pub result: Option<String>,
-    pub winner: Option<String>,
-}
-
-#[derive(Deserialize, Debug, Clone)]
+#[derive(Deserialize, Debug, Clone, Copy)]
 pub struct Method {
     pub innings: Option<i32>,
     pub runs: Option<i32>,
@@ -255,6 +363,39 @@ impl fmt::Display for Method {
             return write!(f, "Won by {} wickets", self.wickets.unwrap());
         }
         panic!("No winning information");
+    }
+}
+
+#[derive(Deserialize, Debug, Clone)]
+pub struct Outcome {
+    pub by: Option<Method>,
+    pub bowl_out: Option<String>,
+    pub eliminator: Option<String>,
+    pub method: Option<String>,
+    pub result: Option<String>,
+    pub winner: Option<String>,
+}
+
+impl Outcome {
+    pub fn create_outcome(&self) -> GameOutcome {
+        match self.by {
+            Some(x) => GameOutcome {
+                draw: self.result == Some(String::from("draw")),
+                tie: self.result == Some(String::from("tie")),
+                winner: self.winner.clone(),
+                method: self.method.clone(),
+                runs_margin: x.runs,
+                wickets_margin: x.wickets,
+                innings_win: x.innings.is_some(),
+            },
+            None => GameOutcome {
+                draw: self.result == Some(String::from("draw")),
+                tie: self.result == Some(String::from("tie")),
+                winner: self.winner.clone(),
+                method: self.method.clone(),
+                ..Default::default()
+            },
+        }
     }
 }
 

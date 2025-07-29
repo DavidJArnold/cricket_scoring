@@ -1,118 +1,34 @@
 mod cricsheet_lib;
-use cricket_scoring::scoring::game::Meta;
-use cricket_scoring::scoring::player::Team;
-use cricsheet_lib::{Cricsheet, Delivery};
-use std::collections::HashMap;
-use std::{fs::File, io::Read};
-
-use cricket_scoring::scoring::ball::{BallEvents, BallOutcome};
-use cricket_scoring::scoring::{game::Game, innings::Innings};
-
-fn parse_ball(ball: &Delivery) -> BallOutcome {
-    let mut ball_events: Vec<BallEvents> = Vec::new();
-    if ball.extras.is_some() {
-        if ball.extras.clone().unwrap().byes.is_some() {
-            ball_events.push(BallEvents::Bye);
-        }
-        if ball.extras.clone().unwrap().legbyes.is_some() {
-            ball_events.push(BallEvents::LegBye);
-        }
-        if ball.extras.clone().unwrap().wides.is_some() {
-            ball_events.push(BallEvents::Wide);
-        }
-        if ball.extras.clone().unwrap().noballs.is_some() {
-            ball_events.push(BallEvents::NoBall);
-        }
-    }
-    if ball.wickets.is_some() {
-        ball_events.push(BallEvents::Wicket);
-    }
-    if ball.runs.batter == 4 && !ball.runs.non_boundary.unwrap_or(false) {
-        ball_events.push(BallEvents::Four);
-    }
-    if ball.runs.batter == 6 && !ball.runs.non_boundary.unwrap_or(false) {
-        ball_events.push(BallEvents::Six);
-    }
-
-    let ball_outcome = BallOutcome::new(ball.runs.batter, ball_events);
-    ball_outcome.validate().unwrap();
-    ball_outcome
-}
+mod cricsheet_utils;
+use cricsheet_utils::{compare_results, get_cricsheet_game};
 
 fn main() {
     // parse a set of cricsheet games
-    let filename = "examples/all_matches";
-    let num_files = std::fs::read_dir(filename).unwrap().count();
+    let cricsheet_directory = "examples/all_matches";
     let mut read_files = 0;
-    for file in std::fs::read_dir(filename).unwrap() {
-        let x = file.unwrap();
-        if x.path().to_str().unwrap().ends_with("txt") {
-            continue;
-        }
-        let mut data = String::new();
-        let mut file = File::open(x.path()).unwrap();
-        let _ = &file.read_to_string(&mut data);
-
-        // parse the game into a Cricsheet object
-        let json: serde_json::Value = serde_json::from_str(&data).unwrap();
-        let cricsheet: Cricsheet = serde_json::from_value(json).unwrap();
+    let mut correct_result = 0;
+    for file in std::fs::read_dir(cricsheet_directory).unwrap() {
+        let cricsheet = get_cricsheet_game(file.as_ref().expect("")).unwrap();
 
         // Now construct a Game object for this game
-        //
-        // First get the teams
-        let cricsheet_teams = cricsheet.info.teams.clone();
-        let teams: HashMap<String, Team> = cricsheet_teams
-            .iter()
-            .map(|x| (x.clone(), cricsheet.info.clone().team(x)))
-            .collect();
-
-        // then initialise the game
-        let mut cricket_match = Game {
-            innings: vec![],
-            meta: Meta {
-                venue: cricsheet.info.venue,
-            },
-            outcome: None,
-            teams,
-        };
+        let mut cricket_match = cricsheet.create_game();
 
         // Now go through the innings'
         for innings_data in &cricsheet.innings {
-            // initialise the Innings object
-            let batting_team_name = innings_data.team.clone();
-            let bowling_team_name = cricsheet
-                .info
-                .teams
-                .iter()
-                .find(|x| **x != batting_team_name)
-                .unwrap()
-                .clone();
-            let mut innings = Innings::new(
-                cricket_match.teams.get(&batting_team_name).unwrap().clone(),
-                cricket_match.teams.get(&bowling_team_name).unwrap().clone(),
-            );
+            innings_data.process_innings(&mut cricket_match);
+            let innings = cricket_match.innings.last().unwrap();
 
-            // iterate through overs and balls
-            for over in innings_data.overs.clone().unwrap_or(vec![]) {
-                for ball in &over.deliveries {
-                    let ball_outcome = parse_ball(ball);
-                    innings.score_ball(&ball_outcome);
-                }
-                innings.over();
-            }
-            innings.finished = true;
-            // println!("{}\n{}", innings_data.team, innings);
-            cricket_match.innings.push(innings);
+            compare_results(innings_data, innings);
         }
 
-        cricket_match.score();
+        cricket_match.score(cricsheet.info.outcome.create_outcome());
 
         let by = match cricsheet.info.outcome.by {
             Some(x) => format!("{}", &x),
-            None => "No winner".to_string(),
+            None => cricsheet.info.outcome.result.unwrap_or_default(),
         };
-        println!(
-            "CRICSHEET: {} {by} {}",
+        let cricsheet_result = format!(
+            "{} {by} {}",
             cricsheet
                 .info
                 .outcome
@@ -122,16 +38,65 @@ fn main() {
         );
 
         let res = cricket_match.outcome.unwrap();
-        println!(
-            "MY SCORES: {} {:?} wickets or {:?} runs",
-            res.winner.unwrap_or("NO WINNER".to_string()),
-            res.wickets_margin.unwrap_or(0),
-            res.runs_margin.unwrap_or(0),
-        );
-        read_files += 1;
-        if read_files % 20 == 0 {
-            println!("{read_files}/{num_files}");
-            break;
+        let mut innings_win_text = String::new();
+        if res.innings_win {
+            innings_win_text = String::from("an innings and ");
         }
+        let draw_win;
+        if res.draw {
+            draw_win = "Draw";
+        } else if res.tie {
+            draw_win = "Tie";
+        } else {
+            draw_win = "Won by";
+        };
+        let mut run_wickets = String::new();
+        if res.runs_margin.is_some() {
+            run_wickets = String::from("runs");
+        } else if res.wickets_margin.is_some() {
+            run_wickets = String::from("wickets");
+        }
+        let my_result = format!(
+            "{} {draw_win} {}{} {} {}",
+            res.winner.unwrap_or("NO WINNER".to_string()),
+            innings_win_text,
+            res.wickets_margin
+                .unwrap_or(res.runs_margin.unwrap_or_default()),
+            run_wickets,
+            res.method.unwrap_or_default(),
+        );
+        if my_result
+            .trim_end()
+            .strip_suffix('0')
+            .unwrap_or(&my_result)
+            .trim_end()
+            .to_lowercase()
+            == cricsheet_result.trim_end().to_lowercase()
+        {
+            correct_result += 1;
+        } else {
+            println!(
+                "MATCH {}\nCRICSHEET: {}\nMY SCORE: {}",
+                file.unwrap().file_name().into_string().unwrap(),
+                cricsheet_result,
+                my_result
+            );
+            println!(
+                "{}",
+                cricket_match
+                    .innings
+                    .iter()
+                    .map(|x| x.score.summary())
+                    .fold(String::new(), |x, y| vec![x, "\n".to_string(), y]
+                        .into_iter()
+                        .collect::<String>())
+            );
+        }
+
+        read_files += 1;
     }
+    println!(
+        "Got {correct_result} right out of {read_files} games ({:.2}%)",
+        f64::from(correct_result) / f64::from(read_files) * 100.0
+    );
 }
