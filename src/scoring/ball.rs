@@ -2,13 +2,20 @@ use super::player::Player;
 
 use crate::error::BallOutcomeValidation;
 
+#[derive(Debug, PartialEq, Clone)]
+pub struct Wicket {
+    pub player_out: String,
+    pub kind: String,
+}
+
 #[derive(PartialEq)]
 pub enum BallEvents {
     Bye(i32),
     LegBye(i32),
     NoBall(i32),
-    Wicket(Vec<String>),
+    Wicket(Vec<Wicket>),
     Wide(i32),
+    Penalty(i32),
     Four,
     Six,
 }
@@ -16,7 +23,7 @@ pub enum BallEvents {
 #[derive(Default, Debug)]
 pub struct BallOutcome {
     pub runs: i32,
-    pub wicket: Option<Vec<String>>,
+    pub wicket: Option<Vec<Wicket>>,
     pub no_ball: Option<i32>,
     pub wide: Option<i32>,
     pub byes: Option<i32>,
@@ -26,6 +33,7 @@ pub struct BallOutcome {
     pub six: bool,
     pub on_strike: Player,
     pub off_strike: Player,
+    pub penalty: Option<i32>,
 }
 
 impl BallOutcome {
@@ -51,6 +59,7 @@ impl BallOutcome {
                 BallEvents::Wide(x) => outcome.wide = Some(x),
                 BallEvents::Four => outcome.four = true,
                 BallEvents::Six => outcome.six = true,
+                BallEvents::Penalty(x) => outcome.penalty = Some(x),
             }
         }
         outcome

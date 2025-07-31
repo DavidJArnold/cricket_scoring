@@ -30,8 +30,12 @@ impl CurrentScore {
         }
         self.runs += ball_outcome.runs;
         if ball_outcome.wicket.is_some() {
-            self.wickets_lost += 1;
-            self.wickets_left -= 1;
+            for wicket in ball_outcome.wicket.clone().unwrap() {
+                if wicket.kind == "retired out" || !wicket.kind.contains("retired") {
+                    self.wickets_lost += 1;
+                    self.wickets_left -= 1;
+                }
+            }
         }
         if ball_outcome.wide.is_some() {
             self.wides += ball_outcome.wide.unwrap() + ball_outcome.runs;
@@ -48,6 +52,9 @@ impl CurrentScore {
         if ball_outcome.leg_byes.is_some() {
             self.leg_byes += ball_outcome.leg_byes.unwrap();
             self.runs += ball_outcome.leg_byes.unwrap();
+        }
+        if ball_outcome.penalty.is_some() {
+            self.runs += ball_outcome.penalty.unwrap();
         }
     }
 

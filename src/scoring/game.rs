@@ -19,6 +19,7 @@ pub struct Outcome {
     pub wickets_margin: Option<i32>,
     pub method: Option<String>,
     pub innings_win: bool,
+    pub result: bool,
 }
 
 #[derive(Debug)]
@@ -52,6 +53,7 @@ fn get_margin(
         wickets_margin,
         method: None,
         innings_win,
+        result: true,
     }
 }
 
@@ -94,6 +96,11 @@ impl Game {
             return;
         }
 
+        if !outcome.result {
+            self.outcome = Some(outcome);
+            return;
+        }
+
         // 0 or 1 innings
         let not_finished = scores.len() < 2;
         // last team didn't score enough runs, but had wickets left (NOTE: Doesn't check whether
@@ -120,6 +127,7 @@ impl Game {
                 wickets_margin: None,
                 method: None,
                 innings_win: false,
+                result: true,
             });
             return;
         }

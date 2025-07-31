@@ -4,7 +4,7 @@
 
 use chrono::NaiveDate;
 use cricket_scoring::scoring::{
-    ball::{BallEvents, BallOutcome},
+    ball::{BallEvents, BallOutcome, Wicket as LibWicket},
     game::{Game, Meta, Outcome as GameOutcome},
     innings::Innings,
     player::{Player, Team},
@@ -213,6 +213,11 @@ impl Delivery {
                     self.extras.clone().unwrap().wides.unwrap(),
                 ));
             }
+            if self.extras.clone().unwrap().penalty.is_some() {
+                ball_events.push(BallEvents::Penalty(
+                    self.extras.clone().unwrap().penalty.unwrap(),
+                ));
+            }
             if self.extras.clone().unwrap().noballs.is_some() {
                 ball_events.push(BallEvents::NoBall(
                     self.extras.clone().unwrap().noballs.unwrap(),
@@ -225,7 +230,7 @@ impl Delivery {
                     .clone()
                     .unwrap()
                     .into_iter()
-                    .map(|x| x.player_out)
+                    .map(|x| LibWicket { player_out:x.player_out, kind:x.kind})
                     .collect(),
             ));
         }
@@ -387,6 +392,7 @@ impl Outcome {
                 runs_margin: x.runs,
                 wickets_margin: x.wickets,
                 innings_win: x.innings.is_some(),
+                result: self.result != Some(String::from("no result")),
             },
             None => GameOutcome {
                 draw: self.result == Some(String::from("draw")),

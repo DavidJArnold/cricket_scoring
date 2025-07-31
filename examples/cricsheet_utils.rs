@@ -75,13 +75,13 @@ pub fn compare_results(innings_data: &CricsheetInnings, innings: &Innings) {
     }
 }
 
-pub fn get_cricsheet_game(file: &DirEntry) -> Option<Cricsheet> {
-    if file.path().to_str().unwrap().ends_with("txt") {
+pub fn get_cricsheet_game(directory_entry: &DirEntry) -> Option<Cricsheet> {
+    if directory_entry.path().to_str().unwrap().ends_with("txt") {
         return None;
     }
 
     let mut data = String::new();
-    let mut file = File::open(file.path()).unwrap();
+    let mut file = File::open(directory_entry.path()).unwrap();
     let _ = &file.read_to_string(&mut data);
 
     // parse the game into a Cricsheet object

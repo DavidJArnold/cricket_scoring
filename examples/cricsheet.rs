@@ -8,7 +8,9 @@ fn main() {
     let mut read_files = 0;
     let mut correct_result = 0;
     for file in std::fs::read_dir(cricsheet_directory).unwrap() {
-        let cricsheet = get_cricsheet_game(file.as_ref().expect("")).unwrap();
+        let cricsheet_record = get_cricsheet_game(file.as_ref().expect(""));
+        if cricsheet_record.is_none() { continue; };
+        let cricsheet = cricsheet_record.unwrap();
 
         // Now construct a Game object for this game
         let mut cricket_match = cricsheet.create_game();
@@ -25,16 +27,16 @@ fn main() {
 
         let by = match cricsheet.info.outcome.by {
             Some(x) => format!("{}", &x),
-            None => cricsheet.info.outcome.result.unwrap_or_default(),
+            None => cricsheet.info.outcome.result.clone().unwrap_or_default(),
         };
         let cricsheet_result = format!(
             "{} {by} {}",
             cricsheet
                 .info
                 .outcome
-                .winner
+                .winner.clone()
                 .unwrap_or("NO WINNER".to_string()),
-            cricsheet.info.outcome.method.unwrap_or_default()
+            cricsheet.info.outcome.method.clone().unwrap_or_default()
         );
 
         let res = cricket_match.outcome.unwrap();
@@ -43,27 +45,32 @@ fn main() {
             innings_win_text = String::from("an innings and ");
         }
         let draw_win;
+        let mut margin = String::new();
         if res.draw {
             draw_win = "Draw";
         } else if res.tie {
-            draw_win = "Tie";
+            draw_win = "tie";
+        } else if !res.result {
+            draw_win = "no result";
         } else {
             draw_win = "Won by";
         };
         let mut run_wickets = String::new();
         if res.runs_margin.is_some() {
             run_wickets = String::from("runs");
-        } else if res.wickets_margin.is_some() {
+            margin = format!("{}", res.runs_margin.unwrap());
+        };
+        if res.wickets_margin.is_some() {
             run_wickets = String::from("wickets");
-        }
+            margin = format!("{}", res.wickets_margin.unwrap());
+        };
         let my_result = format!(
             "{} {draw_win} {}{} {} {}",
             res.winner.unwrap_or("NO WINNER".to_string()),
             innings_win_text,
-            res.wickets_margin
-                .unwrap_or(res.runs_margin.unwrap_or_default()),
+            margin,
             run_wickets,
-            res.method.unwrap_or_default(),
+            res.method.clone().unwrap_or_default(),
         );
         if my_result
             .trim_end()
@@ -71,10 +78,13 @@ fn main() {
             .unwrap_or(&my_result)
             .trim_end()
             .to_lowercase()
+            .replace("   ", " ")
             == cricsheet_result.trim_end().to_lowercase()
         {
             correct_result += 1;
         } else {
+            println!("---------------------------------");
+            println!("{:?} {}", cricsheet.info.dates, cricsheet.info.event.unwrap().name);
             println!(
                 "MATCH {}\nCRICSHEET: {}\nMY SCORE: {}",
                 file.unwrap().file_name().into_string().unwrap(),
@@ -94,6 +104,9 @@ fn main() {
         }
 
         read_files += 1;
+        // if cricsheet.info.outcome.result == Some(String::from("no result")) {
+        //     break;
+        // }
     }
     println!(
         "Got {correct_result} right out of {read_files} games ({:.2}%)",

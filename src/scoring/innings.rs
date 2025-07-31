@@ -56,15 +56,18 @@ impl Innings {
         }
 
         if ball_outcome.wicket.is_some() {
-            let player_out = ball_outcome.wicket.clone().unwrap();
-            if player_out.contains(&striker.name) {
-                striker.out = true;
-                self.on_strike = self.on_strike.max(self.off_strike) + 1;
-            } else {
-                let non_striker = self.batting_team.players.get_mut(self.off_strike).unwrap();
-                non_striker.out = true;
-                self.off_strike = self.on_strike.max(self.off_strike) + 1;
-            };
+            for wicket in ball_outcome.wicket.as_ref().unwrap() {
+                let player_out = wicket.player_out.clone();
+                let out_striker = self.batting_team.players.get_mut(self.on_strike).unwrap();
+                if player_out.contains(&out_striker.name) {
+                    out_striker.out = true;
+                    self.on_strike = self.on_strike.max(self.off_strike) + 1;
+                } else {
+                    let non_striker = self.batting_team.players.get_mut(self.off_strike).unwrap();
+                    non_striker.out = true;
+                    self.off_strike = self.on_strike.max(self.off_strike) + 1;
+                };
+            }
         }
     }
 }
