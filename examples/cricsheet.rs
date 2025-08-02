@@ -1,5 +1,6 @@
 mod cricsheet_lib;
 mod cricsheet_utils;
+use cricsheet_lib::Event;
 use cricsheet_utils::{compare_results, get_cricsheet_game};
 
 fn main() {
@@ -52,6 +53,10 @@ fn main() {
             draw_win = "tie";
         } else if !res.result {
             draw_win = "no result";
+        } else if res.method.clone().unwrap_or_default() == "Awarded" {
+            draw_win = "";
+        } else if res.method.clone().unwrap_or_default() == "Lost fewer wickets" {
+            draw_win = "";
         } else {
             draw_win = "Won by";
         };
@@ -84,7 +89,7 @@ fn main() {
             correct_result += 1;
         } else {
             println!("---------------------------------");
-            println!("{:?} {}", cricsheet.info.dates, cricsheet.info.event.unwrap().name);
+            println!("{:?} {}", cricsheet.info.dates, cricsheet.info.event.unwrap_or_else(|| Event {name: String::new(), ..Default::default()}).name);
             println!(
                 "MATCH {}\nCRICSHEET: {}\nMY SCORE: {}",
                 file.unwrap().file_name().into_string().unwrap(),
@@ -101,6 +106,7 @@ fn main() {
                         .into_iter()
                         .collect::<String>())
             );
+            // println!("{:?} {:?}", cricsheet.info.outcome.method, cricsheet.info.outcome.result);
         }
 
         read_files += 1;

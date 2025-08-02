@@ -317,7 +317,7 @@ pub struct BowlOut {
     pub outcome: String,
 }
 
-#[derive(Deserialize, Debug, Clone)]
+#[derive(Deserialize, Debug, Clone, Default)]
 pub struct Event {
     pub name: String,
     pub match_number: Option<i32>,
@@ -399,6 +399,8 @@ impl Outcome {
                 tie: self.result == Some(String::from("tie")),
                 winner: self.winner.clone(),
                 method: self.method.clone(),
+                // result: self.result != Some(String::from("no result")),
+                result: self.method.is_some(),
                 ..Default::default()
             },
         }
