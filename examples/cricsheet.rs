@@ -1,4 +1,5 @@
 mod cricsheet_lib;
+#[path = "shared/cricsheet_utils.rs"]
 mod cricsheet_utils;
 use cricsheet_lib::Event;
 use cricsheet_utils::{compare_results, get_cricsheet_game};
