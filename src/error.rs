@@ -40,7 +40,7 @@ mod tests {
     fn test_ball_string_invalid_bye_error() {
         let error = BallString::InvalidByeCharacter;
         assert_eq!(
-            error.to_string(), 
+            error.to_string(),
             "If byes are indicated, the number of runs to be added to the total must be indicated"
         );
     }
@@ -48,7 +48,10 @@ mod tests {
     #[test]
     fn test_ball_string_invalid_description_error() {
         let error = BallString::InvalidBallDescription;
-        assert_eq!(error.to_string(), "Only zero or one of F/S, or L/B can appear");
+        assert_eq!(
+            error.to_string(),
+            "Only zero or one of F/S, or L/B can appear"
+        );
     }
 
     #[test]
@@ -69,12 +72,16 @@ mod tests {
     #[test]
     fn test_ball_outcome_validation_double_outcome() {
         let error = BallOutcomeValidation::DoubleOutcome("Four".to_string(), "Six".to_string());
-        assert_eq!(error.to_string(), "Incompatible double outcomes Four and Six given.");
+        assert_eq!(
+            error.to_string(),
+            "Incompatible double outcomes Four and Six given."
+        );
     }
 
     #[test]
     fn test_ball_outcome_validation_clone() {
-        let original = BallOutcomeValidation::DoubleOutcome("Bye".to_string(), "Leg Bye".to_string());
+        let original =
+            BallOutcomeValidation::DoubleOutcome("Bye".to_string(), "Leg Bye".to_string());
         let cloned = original.clone();
         assert_eq!(original.to_string(), cloned.to_string());
     }

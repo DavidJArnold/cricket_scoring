@@ -43,16 +43,22 @@ impl fmt::Display for Player {
         if !self.out {
             not_out_ind = "*";
         }
-        
+
         let strike_rate_str = match self.strike_rate() {
             Some(sr) => format!(", SR: {:.2}", sr),
             None => String::new(),
         };
-        
+
         write!(
             f,
             "{}: {}{}({}), {} 4s, {} 6s{}",
-            self.name, self.runs, not_out_ind, self.balls_faced, self.fours, self.sixes, strike_rate_str
+            self.name,
+            self.runs,
+            not_out_ind,
+            self.balls_faced,
+            self.fours,
+            self.sixes,
+            strike_rate_str
         )
     }
 }
@@ -141,7 +147,7 @@ mod tests {
             Player::new("Player2".to_string()),
             Player::new("Player3".to_string()),
         ];
-        
+
         let team = Team {
             name: "Test Team".to_string(),
             players: players.clone(),
@@ -160,7 +166,7 @@ mod tests {
             Player::new("Player1".to_string()),
             Player::new("Player2".to_string()),
         ];
-        
+
         let team = Team {
             name: "Original Team".to_string(),
             players,
@@ -187,18 +193,18 @@ mod tests {
     #[test]
     fn test_player_stats_modification() {
         let mut player = Player::new("Test Batsman".to_string());
-        
+
         // Simulate scoring
         player.runs += 4;
         player.balls_faced += 1;
         player.fours += 1;
-        
+
         assert_eq!(player.runs, 4);
         assert_eq!(player.balls_faced, 1);
         assert_eq!(player.fours, 1);
         assert_eq!(player.sixes, 0);
         assert!(!player.out);
-        
+
         // Simulate getting out
         player.out = true;
         assert!(player.out);
@@ -207,14 +213,14 @@ mod tests {
     #[test]
     fn test_player_complex_scoring() {
         let mut player = Player::new("Heavy Scorer".to_string());
-        
+
         // Simulate a complex innings
         player.runs = 125;
         player.balls_faced = 85;
         player.fours = 12;
         player.sixes = 4;
         player.out = true;
-        
+
         let display = format!("{}", player);
         assert_eq!(display, "Heavy Scorer: 125(85), 12 4s, 4 6s, SR: 147.06");
     }
@@ -222,25 +228,25 @@ mod tests {
     #[test]
     fn test_strike_rate_calculation() {
         let mut player = Player::new("Test Player".to_string());
-        
+
         // Test with no balls faced
         assert_eq!(player.strike_rate(), None);
-        
+
         // Test with 50 runs from 50 balls (strike rate 100)
         player.runs = 50;
         player.balls_faced = 50;
         assert_eq!(player.strike_rate(), Some(100.0));
-        
+
         // Test with 75 runs from 50 balls (strike rate 150)
         player.runs = 75;
         player.balls_faced = 50;
         assert_eq!(player.strike_rate(), Some(150.0));
-        
+
         // Test with 25 runs from 100 balls (strike rate 25)
         player.runs = 25;
         player.balls_faced = 100;
         assert_eq!(player.strike_rate(), Some(25.0));
-        
+
         // Test with 1 run from 3 balls (strike rate 33.333...)
         player.runs = 1;
         player.balls_faced = 3;
@@ -251,20 +257,20 @@ mod tests {
     #[test]
     fn test_strike_rate_display_formatting() {
         let mut player = Player::new("Test Batsman".to_string());
-        
+
         // Test with exact strike rate
         player.runs = 50;
         player.balls_faced = 50;
         player.out = false;
         let display = format!("{}", player);
         assert_eq!(display, "Test Batsman: 50*(50), 0 4s, 0 6s, SR: 100.00");
-        
+
         // Test with decimal strike rate
         player.runs = 33;
         player.balls_faced = 25;
         let display = format!("{}", player);
         assert_eq!(display, "Test Batsman: 33*(25), 0 4s, 0 6s, SR: 132.00");
-        
+
         // Test with repeating decimal
         player.runs = 10;
         player.balls_faced = 3;
@@ -275,17 +281,17 @@ mod tests {
     #[test]
     fn test_strike_rate_edge_cases() {
         let mut player = Player::new("Edge Case".to_string());
-        
+
         // Test with 0 runs but balls faced
         player.runs = 0;
         player.balls_faced = 10;
         assert_eq!(player.strike_rate(), Some(0.0));
-        
+
         // Test with very high strike rate
         player.runs = 200;
         player.balls_faced = 100;
         assert_eq!(player.strike_rate(), Some(200.0));
-        
+
         // Test with very low strike rate
         player.runs = 1;
         player.balls_faced = 100;

@@ -312,7 +312,7 @@ mod tests {
     #[test]
     fn test_over() {
         let mut score = CurrentScore::new();
-        
+
         // Simulate 6 balls
         for _ in 0..6 {
             let ball_outcome = BallOutcome {
@@ -321,13 +321,13 @@ mod tests {
             };
             score.score_ball(&ball_outcome);
         }
-        
+
         assert_eq!(score.ball, 6);
         assert_eq!(score.over, 0);
-        
+
         // Call over
         score.over();
-        
+
         assert_eq!(score.ball, 0);
         assert_eq!(score.over, 1);
     }
@@ -345,7 +345,10 @@ mod tests {
         score.ball = 3;
 
         let summary = score.summary();
-        assert_eq!(summary, "3/125\n5 wides, 2 no balls, 3 byes, 1 leg byes\n20.3");
+        assert_eq!(
+            summary,
+            "3/125\n5 wides, 2 no balls, 3 byes, 1 leg byes\n20.3"
+        );
     }
 
     #[test]
@@ -363,10 +366,7 @@ mod tests {
     #[test]
     fn test_multiple_wickets_same_ball() {
         let mut score = CurrentScore::new();
-        let wickets = vec![
-            create_test_wicket("run out"),
-            create_test_wicket("bowled"),
-        ];
+        let wickets = vec![create_test_wicket("run out"), create_test_wicket("bowled")];
         let ball_outcome = BallOutcome {
             runs: 0,
             wicket: Some(wickets),
@@ -382,7 +382,7 @@ mod tests {
     #[test]
     fn test_progression_through_over() {
         let mut score = CurrentScore::new();
-        
+
         // Score through multiple balls and overs
         for over in 0..5 {
             for ball in 0..6 {
@@ -391,13 +391,13 @@ mod tests {
                     ..Default::default()
                 };
                 score.score_ball(&ball_outcome);
-                
+
                 assert_eq!(score.over, over);
                 assert_eq!(score.ball, ball + 1);
             }
             score.over();
         }
-        
+
         assert_eq!(score.over, 5);
         assert_eq!(score.ball, 0);
         assert_eq!(score.runs, 30); // 5 overs * 6 balls * 1 run

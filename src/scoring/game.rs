@@ -184,11 +184,21 @@ mod tests {
         let mut teams = HashMap::new();
         teams.insert("TeamA".to_string(), team_a);
         teams.insert("TeamB".to_string(), team_b);
-        
-        Game::new(Meta { venue: Some("Test Ground".to_string()) }, teams)
+
+        Game::new(
+            Meta {
+                venue: Some("Test Ground".to_string()),
+            },
+            teams,
+        )
     }
 
-    fn create_test_innings(batting_team_name: &str, bowling_team_name: &str, runs: i32, wickets_left: i32) -> Innings {
+    fn create_test_innings(
+        batting_team_name: &str,
+        bowling_team_name: &str,
+        runs: i32,
+        wickets_left: i32,
+    ) -> Innings {
         let batting_team = create_test_team(batting_team_name);
         let bowling_team = create_test_team(bowling_team_name);
         let mut innings = Innings::new(batting_team, bowling_team);
@@ -201,19 +211,21 @@ mod tests {
     #[test]
     fn test_simple_win_by_runs() {
         let mut game = create_test_game();
-        
+
         // TeamA scores 100
-        game.innings.push(create_test_innings("TeamA", "TeamB", 100, 8));
+        game.innings
+            .push(create_test_innings("TeamA", "TeamB", 100, 8));
         // TeamB scores 80 (all out)
-        game.innings.push(create_test_innings("TeamB", "TeamA", 80, 0));
+        game.innings
+            .push(create_test_innings("TeamB", "TeamA", 80, 0));
 
         let outcome = Outcome {
             result: true,
             ..Default::default()
         };
-        
+
         game.score(outcome);
-        
+
         let result = game.outcome.unwrap();
         assert!(!result.draw);
         assert!(!result.tie);
@@ -226,19 +238,21 @@ mod tests {
     #[test]
     fn test_simple_win_by_wickets() {
         let mut game = create_test_game();
-        
+
         // TeamA scores 100 (all out)
-        game.innings.push(create_test_innings("TeamA", "TeamB", 100, 0));
+        game.innings
+            .push(create_test_innings("TeamA", "TeamB", 100, 0));
         // TeamB scores 101 with 6 wickets left
-        game.innings.push(create_test_innings("TeamB", "TeamA", 101, 6));
+        game.innings
+            .push(create_test_innings("TeamB", "TeamA", 101, 6));
 
         let outcome = Outcome {
             result: true,
             ..Default::default()
         };
-        
+
         game.score(outcome);
-        
+
         let result = game.outcome.unwrap();
         assert!(!result.draw);
         assert!(!result.tie);
@@ -251,18 +265,20 @@ mod tests {
     #[test]
     fn test_tie() {
         let mut game = create_test_game();
-        
+
         // Both teams score 150
-        game.innings.push(create_test_innings("TeamA", "TeamB", 150, 5));
-        game.innings.push(create_test_innings("TeamB", "TeamA", 150, 3));
+        game.innings
+            .push(create_test_innings("TeamA", "TeamB", 150, 5));
+        game.innings
+            .push(create_test_innings("TeamB", "TeamA", 150, 3));
 
         let outcome = Outcome {
             result: true,
             ..Default::default()
         };
-        
+
         game.score(outcome);
-        
+
         let result = game.outcome.unwrap();
         assert!(!result.draw);
         assert!(result.tie);
@@ -274,20 +290,22 @@ mod tests {
     #[test]
     fn test_draw() {
         let mut game = create_test_game();
-        
+
         // TeamA scores 200
-        game.innings.push(create_test_innings("TeamA", "TeamB", 200, 2));
+        game.innings
+            .push(create_test_innings("TeamA", "TeamB", 200, 2));
         // TeamB scores 150 with wickets left (didn't reach target)
-        game.innings.push(create_test_innings("TeamB", "TeamA", 150, 4));
+        game.innings
+            .push(create_test_innings("TeamB", "TeamA", 150, 4));
 
         let outcome = Outcome {
             result: true,
             winner: None,
             ..Default::default()
         };
-        
+
         game.score(outcome);
-        
+
         let result = game.outcome.unwrap();
         assert!(result.draw);
         assert!(!result.tie);
@@ -297,21 +315,24 @@ mod tests {
     #[test]
     fn test_innings_win() {
         let mut game = create_test_game();
-        
+
         // TeamA scores 400
-        game.innings.push(create_test_innings("TeamA", "TeamB", 400, 3));
+        game.innings
+            .push(create_test_innings("TeamA", "TeamB", 400, 3));
         // TeamB scores 150 (all out)
-        game.innings.push(create_test_innings("TeamB", "TeamA", 150, 0));
+        game.innings
+            .push(create_test_innings("TeamB", "TeamA", 150, 0));
         // TeamB scores 200 in follow-on (all out) - TeamA still ahead
-        game.innings.push(create_test_innings("TeamB", "TeamA", 200, 0));
+        game.innings
+            .push(create_test_innings("TeamB", "TeamA", 200, 0));
 
         let outcome = Outcome {
             result: true,
             ..Default::default()
         };
-        
+
         game.score(outcome);
-        
+
         let result = game.outcome.unwrap();
         assert!(!result.draw);
         assert!(!result.tie);
@@ -323,16 +344,17 @@ mod tests {
     #[test]
     fn test_no_result_method() {
         let mut game = create_test_game();
-        game.innings.push(create_test_innings("TeamA", "TeamB", 100, 5));
+        game.innings
+            .push(create_test_innings("TeamA", "TeamB", 100, 5));
 
         let outcome = Outcome {
             method: Some("rain".to_string()),
             result: false,
             ..Default::default()
         };
-        
+
         game.score(outcome);
-        
+
         let result = game.outcome.unwrap();
         assert_eq!(result.method, Some("rain".to_string()));
         assert!(!result.result);
@@ -341,15 +363,16 @@ mod tests {
     #[test]
     fn test_no_result_without_method() {
         let mut game = create_test_game();
-        game.innings.push(create_test_innings("TeamA", "TeamB", 100, 5));
+        game.innings
+            .push(create_test_innings("TeamA", "TeamB", 100, 5));
 
         let outcome = Outcome {
             result: false,
             ..Default::default()
         };
-        
+
         game.score(outcome);
-        
+
         let result = game.outcome.unwrap();
         assert!(!result.result);
         assert!(result.method.is_none());
@@ -359,15 +382,16 @@ mod tests {
     fn test_not_finished_game() {
         let mut game = create_test_game();
         // Only one team has batted
-        game.innings.push(create_test_innings("TeamA", "TeamB", 200, 3));
+        game.innings
+            .push(create_test_innings("TeamA", "TeamB", 200, 3));
 
         let outcome = Outcome {
             result: true,
             ..Default::default()
         };
-        
+
         game.score(outcome);
-        
+
         let result = game.outcome.unwrap();
         assert!(result.draw);
         assert!(!result.tie);
@@ -377,23 +401,27 @@ mod tests {
     #[test]
     fn test_multiple_innings_per_team() {
         let mut game = create_test_game();
-        
+
         // TeamA first innings: 200
-        game.innings.push(create_test_innings("TeamA", "TeamB", 200, 2));
+        game.innings
+            .push(create_test_innings("TeamA", "TeamB", 200, 2));
         // TeamB first innings: 150
-        game.innings.push(create_test_innings("TeamB", "TeamA", 150, 0));
+        game.innings
+            .push(create_test_innings("TeamB", "TeamA", 150, 0));
         // TeamA second innings: 100
-        game.innings.push(create_test_innings("TeamA", "TeamB", 100, 5));
+        game.innings
+            .push(create_test_innings("TeamA", "TeamB", 100, 5));
         // TeamB second innings: 120 (chasing 251)
-        game.innings.push(create_test_innings("TeamB", "TeamA", 120, 0));
+        game.innings
+            .push(create_test_innings("TeamB", "TeamA", 120, 0));
 
         let outcome = Outcome {
             result: true,
             ..Default::default()
         };
-        
+
         game.score(outcome);
-        
+
         let result = game.outcome.unwrap();
         assert!(!result.draw);
         assert!(!result.tie);
