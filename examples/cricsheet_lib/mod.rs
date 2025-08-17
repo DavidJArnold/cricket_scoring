@@ -230,7 +230,10 @@ impl Delivery {
                     .clone()
                     .unwrap()
                     .into_iter()
-                    .map(|x| LibWicket { player_out:x.player_out, kind:x.kind})
+                    .map(|x| LibWicket {
+                        player_out: x.player_out,
+                        kind: x.kind,
+                    })
                     .collect(),
             ));
         }
