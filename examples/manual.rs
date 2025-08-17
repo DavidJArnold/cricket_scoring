@@ -1,7 +1,7 @@
 use std::char;
 
 use cricket_scoring::error::BallString;
-use cricket_scoring::scoring::ball::{BallEvents, BallOutcome};
+use cricket_scoring::scoring::ball::{BallEvents, BallOutcome, Wicket};
 use cricket_scoring::scoring::player::Team;
 use cricket_scoring::scoring::{innings::Innings, player::Player};
 
@@ -60,7 +60,10 @@ fn parse(ball: &str, on_strike: &Player, off_strike: &Player) -> Result<BallOutc
     }
 
     if ball.contains('W') {
-        ball_events.push(BallEvents::Wicket(vec![on_strike.name.clone()]));
+        ball_events.push(BallEvents::Wicket(vec![Wicket {
+            player_out: on_strike.name.clone(),
+            kind: "unknown".to_string(),
+        }]));
     } else if ball.contains('X') {
         ball_events.push(BallEvents::Wide(1));
     } else if ball.contains('O') {

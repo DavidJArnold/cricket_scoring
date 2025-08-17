@@ -88,3 +88,325 @@ impl fmt::Display for CurrentScore {
         )
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::scoring::ball::Wicket;
+
+    fn create_test_wicket(kind: &str) -> Wicket {
+        Wicket {
+            player_out: "Test Player".to_string(),
+            kind: kind.to_string(),
+        }
+    }
+
+    #[test]
+    fn test_current_score_new() {
+        let score = CurrentScore::new();
+        assert_eq!(score.wickets_left, 10);
+        assert_eq!(score.wickets_lost, 0);
+        assert_eq!(score.runs, 0);
+        assert_eq!(score.leg_byes, 0);
+        assert_eq!(score.byes, 0);
+        assert_eq!(score.wides, 0);
+        assert_eq!(score.no_balls, 0);
+        assert_eq!(score.over, 0);
+        assert_eq!(score.ball, 0);
+    }
+
+    #[test]
+    fn test_current_score_default() {
+        let score = CurrentScore::default();
+        assert_eq!(score.wickets_left, 0); // Default is 0, not 10
+        assert_eq!(score.wickets_lost, 0);
+        assert_eq!(score.runs, 0);
+        assert_eq!(score.leg_byes, 0);
+        assert_eq!(score.byes, 0);
+        assert_eq!(score.wides, 0);
+        assert_eq!(score.no_balls, 0);
+        assert_eq!(score.over, 0);
+        assert_eq!(score.ball, 0);
+    }
+
+    #[test]
+    fn test_current_score_clone() {
+        let mut score = CurrentScore::new();
+        score.runs = 50;
+        score.wickets_lost = 3;
+        score.over = 10;
+        score.ball = 4;
+
+        let cloned = score.clone();
+        assert_eq!(score.runs, cloned.runs);
+        assert_eq!(score.wickets_lost, cloned.wickets_lost);
+        assert_eq!(score.wickets_left, cloned.wickets_left);
+        assert_eq!(score.over, cloned.over);
+        assert_eq!(score.ball, cloned.ball);
+    }
+
+    #[test]
+    fn test_score_ball_simple_runs() {
+        let mut score = CurrentScore::new();
+        let ball_outcome = BallOutcome {
+            runs: 2,
+            ..Default::default()
+        };
+
+        score.score_ball(&ball_outcome);
+
+        assert_eq!(score.runs, 2);
+        assert_eq!(score.ball, 1);
+        assert_eq!(score.wickets_lost, 0);
+    }
+
+    #[test]
+    fn test_score_ball_with_wicket() {
+        let mut score = CurrentScore::new();
+        let wicket = vec![create_test_wicket("bowled")];
+        let ball_outcome = BallOutcome {
+            runs: 0,
+            wicket: Some(wicket),
+            ..Default::default()
+        };
+
+        score.score_ball(&ball_outcome);
+
+        assert_eq!(score.runs, 0);
+        assert_eq!(score.ball, 1);
+        assert_eq!(score.wickets_lost, 1);
+        assert_eq!(score.wickets_left, 9);
+    }
+
+    #[test]
+    fn test_score_ball_with_wide() {
+        let mut score = CurrentScore::new();
+        let ball_outcome = BallOutcome {
+            runs: 2,
+            wide: Some(1),
+            ..Default::default()
+        };
+
+        score.score_ball(&ball_outcome);
+
+        assert_eq!(score.runs, 3); // 2 runs + 1 wide
+        assert_eq!(score.wides, 3); // 1 wide + 2 runs
+        assert_eq!(score.ball, 0); // Wide doesn't advance ball count
+    }
+
+    #[test]
+    fn test_score_ball_with_no_ball() {
+        let mut score = CurrentScore::new();
+        let ball_outcome = BallOutcome {
+            runs: 1,
+            no_ball: Some(1),
+            ..Default::default()
+        };
+
+        score.score_ball(&ball_outcome);
+
+        assert_eq!(score.runs, 2); // 1 run + 1 no ball
+        assert_eq!(score.no_balls, 1);
+        assert_eq!(score.ball, 0); // No ball doesn't advance ball count
+    }
+
+    #[test]
+    fn test_score_ball_with_byes() {
+        let mut score = CurrentScore::new();
+        let ball_outcome = BallOutcome {
+            runs: 2,
+            byes: Some(2),
+            ..Default::default()
+        };
+
+        score.score_ball(&ball_outcome);
+
+        assert_eq!(score.runs, 4); // 2 runs + 2 byes
+        assert_eq!(score.byes, 2);
+        assert_eq!(score.ball, 1);
+    }
+
+    #[test]
+    fn test_score_ball_with_leg_byes() {
+        let mut score = CurrentScore::new();
+        let ball_outcome = BallOutcome {
+            runs: 1,
+            leg_byes: Some(1),
+            ..Default::default()
+        };
+
+        score.score_ball(&ball_outcome);
+
+        assert_eq!(score.runs, 2); // 1 run + 1 leg bye
+        assert_eq!(score.leg_byes, 1);
+        assert_eq!(score.ball, 1);
+    }
+
+    #[test]
+    fn test_score_ball_with_penalty() {
+        let mut score = CurrentScore::new();
+        let ball_outcome = BallOutcome {
+            runs: 0,
+            penalty: Some(5),
+            ..Default::default()
+        };
+
+        score.score_ball(&ball_outcome);
+
+        assert_eq!(score.runs, 5);
+        assert_eq!(score.ball, 1);
+    }
+
+    #[test]
+    fn test_score_ball_complex() {
+        let mut score = CurrentScore::new();
+        let wicket = vec![create_test_wicket("caught")];
+        let ball_outcome = BallOutcome {
+            runs: 1,
+            wicket: Some(wicket),
+            no_ball: Some(1),
+            ..Default::default()
+        };
+
+        score.score_ball(&ball_outcome);
+
+        assert_eq!(score.runs, 2); // 1 run + 1 no ball
+        assert_eq!(score.no_balls, 1);
+        assert_eq!(score.wickets_lost, 1);
+        assert_eq!(score.wickets_left, 9);
+        assert_eq!(score.ball, 0); // No ball doesn't advance ball count
+    }
+
+    #[test]
+    fn test_score_ball_retired_wicket() {
+        let mut score = CurrentScore::new();
+        let wicket = vec![create_test_wicket("retired hurt")];
+        let ball_outcome = BallOutcome {
+            runs: 0,
+            wicket: Some(wicket),
+            ..Default::default()
+        };
+
+        score.score_ball(&ball_outcome);
+
+        assert_eq!(score.wickets_lost, 0); // Retired hurt shouldn't count as wicket lost
+        assert_eq!(score.wickets_left, 10);
+    }
+
+    #[test]
+    fn test_score_ball_retired_out_wicket() {
+        let mut score = CurrentScore::new();
+        let wicket = vec![create_test_wicket("retired out")];
+        let ball_outcome = BallOutcome {
+            runs: 0,
+            wicket: Some(wicket),
+            ..Default::default()
+        };
+
+        score.score_ball(&ball_outcome);
+
+        assert_eq!(score.wickets_lost, 1); // Retired out should count as wicket lost
+        assert_eq!(score.wickets_left, 9);
+    }
+
+    #[test]
+    fn test_over() {
+        let mut score = CurrentScore::new();
+
+        // Simulate 6 balls
+        for _ in 0..6 {
+            let ball_outcome = BallOutcome {
+                runs: 1,
+                ..Default::default()
+            };
+            score.score_ball(&ball_outcome);
+        }
+
+        assert_eq!(score.ball, 6);
+        assert_eq!(score.over, 0);
+
+        // Call over
+        score.over();
+
+        assert_eq!(score.ball, 0);
+        assert_eq!(score.over, 1);
+    }
+
+    #[test]
+    fn test_summary() {
+        let mut score = CurrentScore::new();
+        score.wickets_lost = 3;
+        score.runs = 125;
+        score.wides = 5;
+        score.no_balls = 2;
+        score.byes = 3;
+        score.leg_byes = 1;
+        score.over = 20;
+        score.ball = 3;
+
+        let summary = score.summary();
+        assert_eq!(
+            summary,
+            "3/125\n5 wides, 2 no balls, 3 byes, 1 leg byes\n20.3"
+        );
+    }
+
+    #[test]
+    fn test_display() {
+        let mut score = CurrentScore::new();
+        score.wickets_lost = 2;
+        score.runs = 45;
+        score.over = 10;
+        score.ball = 2;
+
+        let display = format!("{}", score);
+        assert_eq!(display, "2/45 (10.2 overs)");
+    }
+
+    #[test]
+    fn test_multiple_wickets_same_ball() {
+        let mut score = CurrentScore::new();
+        let wickets = vec![create_test_wicket("run out"), create_test_wicket("bowled")];
+        let ball_outcome = BallOutcome {
+            runs: 0,
+            wicket: Some(wickets),
+            ..Default::default()
+        };
+
+        score.score_ball(&ball_outcome);
+
+        assert_eq!(score.wickets_lost, 2);
+        assert_eq!(score.wickets_left, 8);
+    }
+
+    #[test]
+    fn test_progression_through_over() {
+        let mut score = CurrentScore::new();
+
+        // Score through multiple balls and overs
+        for over in 0..5 {
+            for ball in 0..6 {
+                let ball_outcome = BallOutcome {
+                    runs: 1,
+                    ..Default::default()
+                };
+                score.score_ball(&ball_outcome);
+
+                assert_eq!(score.over, over);
+                assert_eq!(score.ball, ball + 1);
+            }
+            score.over();
+        }
+
+        assert_eq!(score.over, 5);
+        assert_eq!(score.ball, 0);
+        assert_eq!(score.runs, 30); // 5 overs * 6 balls * 1 run
+    }
+
+    #[test]
+    fn test_zero_values_summary() {
+        let score = CurrentScore::new();
+        let summary = score.summary();
+        assert_eq!(summary, "0/0\n0 wides, 0 no balls, 0 byes, 0 leg byes\n0.0");
+    }
+}

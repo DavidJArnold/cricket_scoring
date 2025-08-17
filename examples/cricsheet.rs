@@ -1,4 +1,5 @@
 mod cricsheet_lib;
+#[path = "shared/cricsheet_utils.rs"]
 mod cricsheet_utils;
 use cricsheet_lib::Event;
 use cricsheet_utils::{compare_results, get_cricsheet_game};
@@ -10,7 +11,9 @@ fn main() {
     let mut correct_result = 0;
     for file in std::fs::read_dir(cricsheet_directory).unwrap() {
         let cricsheet_record = get_cricsheet_game(file.as_ref().expect(""));
-        if cricsheet_record.is_none() { continue; };
+        if cricsheet_record.is_none() {
+            continue;
+        };
         let cricsheet = cricsheet_record.unwrap();
 
         // Now construct a Game object for this game
@@ -35,7 +38,8 @@ fn main() {
             cricsheet
                 .info
                 .outcome
-                .winner.clone()
+                .winner
+                .clone()
                 .unwrap_or("NO WINNER".to_string()),
             cricsheet.info.outcome.method.clone().unwrap_or_default()
         );
@@ -89,7 +93,18 @@ fn main() {
             correct_result += 1;
         } else {
             println!("---------------------------------");
-            println!("{:?} {}", cricsheet.info.dates, cricsheet.info.event.unwrap_or_else(|| Event {name: String::new(), ..Default::default()}).name);
+            println!(
+                "{:?} {}",
+                cricsheet.info.dates,
+                cricsheet
+                    .info
+                    .event
+                    .unwrap_or_else(|| Event {
+                        name: String::new(),
+                        ..Default::default()
+                    })
+                    .name
+            );
             println!(
                 "MATCH {}\nCRICSHEET: {}\nMY SCORE: {}",
                 file.unwrap().file_name().into_string().unwrap(),

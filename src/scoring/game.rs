@@ -77,8 +77,8 @@ impl Game {
 
         for innings in &self.innings {
             let team_name = innings.batting_team.name.clone();
-            batting_team.clone_from(&team_name);
-            bowling_team.clone_from(&innings.bowling_team.name);
+            batting_team = team_name.clone();
+            bowling_team = innings.bowling_team.name.clone();
             teams.push(team_name.clone());
             if let Entry::Vacant(e) = scores.entry(team_name.clone()) {
                 e.insert(vec![innings.score.runs]);
@@ -160,5 +160,273 @@ impl Game {
                 last_innings_wickets_left.unwrap(),
             )),
         };
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::scoring::{innings::Innings, player::Player};
+
+    fn create_test_team(name: &str) -> Team {
+        Team {
+            name: name.to_string(),
+            players: vec![
+                Player::new("Player1".to_string()),
+                Player::new("Player2".to_string()),
+            ],
+        }
+    }
+
+    fn create_test_game() -> Game {
+        let team_a = create_test_team("TeamA");
+        let team_b = create_test_team("TeamB");
+        let mut teams = HashMap::new();
+        teams.insert("TeamA".to_string(), team_a);
+        teams.insert("TeamB".to_string(), team_b);
+
+        Game::new(
+            Meta {
+                venue: Some("Test Ground".to_string()),
+            },
+            teams,
+        )
+    }
+
+    fn create_test_innings(
+        batting_team_name: &str,
+        bowling_team_name: &str,
+        runs: i32,
+        wickets_left: i32,
+    ) -> Innings {
+        let batting_team = create_test_team(batting_team_name);
+        let bowling_team = create_test_team(bowling_team_name);
+        let mut innings = Innings::new(batting_team, bowling_team);
+        innings.score.runs = runs;
+        innings.score.wickets_left = wickets_left;
+        innings.score.wickets_lost = 10 - wickets_left;
+        innings
+    }
+
+    #[test]
+    fn test_simple_win_by_runs() {
+        let mut game = create_test_game();
+
+        // TeamA scores 100
+        game.innings
+            .push(create_test_innings("TeamA", "TeamB", 100, 8));
+        // TeamB scores 80 (all out)
+        game.innings
+            .push(create_test_innings("TeamB", "TeamA", 80, 0));
+
+        let outcome = Outcome {
+            result: true,
+            ..Default::default()
+        };
+
+        game.score(outcome);
+
+        let result = game.outcome.unwrap();
+        assert!(!result.draw);
+        assert!(!result.tie);
+        assert_eq!(result.winner, Some("TeamA".to_string()));
+        assert_eq!(result.runs_margin, Some(20));
+        assert!(result.wickets_margin.is_none());
+        assert!(!result.innings_win);
+    }
+
+    #[test]
+    fn test_simple_win_by_wickets() {
+        let mut game = create_test_game();
+
+        // TeamA scores 100 (all out)
+        game.innings
+            .push(create_test_innings("TeamA", "TeamB", 100, 0));
+        // TeamB scores 101 with 6 wickets left
+        game.innings
+            .push(create_test_innings("TeamB", "TeamA", 101, 6));
+
+        let outcome = Outcome {
+            result: true,
+            ..Default::default()
+        };
+
+        game.score(outcome);
+
+        let result = game.outcome.unwrap();
+        assert!(!result.draw);
+        assert!(!result.tie);
+        assert_eq!(result.winner, Some("TeamB".to_string()));
+        assert!(result.runs_margin.is_none());
+        assert_eq!(result.wickets_margin, Some(6));
+        assert!(!result.innings_win);
+    }
+
+    #[test]
+    fn test_tie() {
+        let mut game = create_test_game();
+
+        // Both teams score 150
+        game.innings
+            .push(create_test_innings("TeamA", "TeamB", 150, 5));
+        game.innings
+            .push(create_test_innings("TeamB", "TeamA", 150, 3));
+
+        let outcome = Outcome {
+            result: true,
+            ..Default::default()
+        };
+
+        game.score(outcome);
+
+        let result = game.outcome.unwrap();
+        assert!(!result.draw);
+        assert!(result.tie);
+        assert!(result.winner.is_none());
+        assert!(result.runs_margin.is_none());
+        assert!(result.wickets_margin.is_none());
+    }
+
+    #[test]
+    fn test_draw() {
+        let mut game = create_test_game();
+
+        // TeamA scores 200
+        game.innings
+            .push(create_test_innings("TeamA", "TeamB", 200, 2));
+        // TeamB scores 150 with wickets left (didn't reach target)
+        game.innings
+            .push(create_test_innings("TeamB", "TeamA", 150, 4));
+
+        let outcome = Outcome {
+            result: true,
+            winner: None,
+            ..Default::default()
+        };
+
+        game.score(outcome);
+
+        let result = game.outcome.unwrap();
+        assert!(result.draw);
+        assert!(!result.tie);
+        assert!(result.winner.is_none());
+    }
+
+    #[test]
+    fn test_innings_win() {
+        let mut game = create_test_game();
+
+        // TeamA scores 400
+        game.innings
+            .push(create_test_innings("TeamA", "TeamB", 400, 3));
+        // TeamB scores 150 (all out)
+        game.innings
+            .push(create_test_innings("TeamB", "TeamA", 150, 0));
+        // TeamB scores 200 in follow-on (all out) - TeamA still ahead
+        game.innings
+            .push(create_test_innings("TeamB", "TeamA", 200, 0));
+
+        let outcome = Outcome {
+            result: true,
+            ..Default::default()
+        };
+
+        game.score(outcome);
+
+        let result = game.outcome.unwrap();
+        assert!(!result.draw);
+        assert!(!result.tie);
+        assert_eq!(result.winner, Some("TeamA".to_string()));
+        assert_eq!(result.runs_margin, Some(50));
+        assert!(result.innings_win);
+    }
+
+    #[test]
+    fn test_no_result_method() {
+        let mut game = create_test_game();
+        game.innings
+            .push(create_test_innings("TeamA", "TeamB", 100, 5));
+
+        let outcome = Outcome {
+            method: Some("rain".to_string()),
+            result: false,
+            ..Default::default()
+        };
+
+        game.score(outcome);
+
+        let result = game.outcome.unwrap();
+        assert_eq!(result.method, Some("rain".to_string()));
+        assert!(!result.result);
+    }
+
+    #[test]
+    fn test_no_result_without_method() {
+        let mut game = create_test_game();
+        game.innings
+            .push(create_test_innings("TeamA", "TeamB", 100, 5));
+
+        let outcome = Outcome {
+            result: false,
+            ..Default::default()
+        };
+
+        game.score(outcome);
+
+        let result = game.outcome.unwrap();
+        assert!(!result.result);
+        assert!(result.method.is_none());
+    }
+
+    #[test]
+    fn test_not_finished_game() {
+        let mut game = create_test_game();
+        // Only one team has batted
+        game.innings
+            .push(create_test_innings("TeamA", "TeamB", 200, 3));
+
+        let outcome = Outcome {
+            result: true,
+            ..Default::default()
+        };
+
+        game.score(outcome);
+
+        let result = game.outcome.unwrap();
+        assert!(result.draw);
+        assert!(!result.tie);
+        assert!(result.winner.is_none());
+    }
+
+    #[test]
+    fn test_multiple_innings_per_team() {
+        let mut game = create_test_game();
+
+        // TeamA first innings: 200
+        game.innings
+            .push(create_test_innings("TeamA", "TeamB", 200, 2));
+        // TeamB first innings: 150
+        game.innings
+            .push(create_test_innings("TeamB", "TeamA", 150, 0));
+        // TeamA second innings: 100
+        game.innings
+            .push(create_test_innings("TeamA", "TeamB", 100, 5));
+        // TeamB second innings: 120 (chasing 251)
+        game.innings
+            .push(create_test_innings("TeamB", "TeamA", 120, 0));
+
+        let outcome = Outcome {
+            result: true,
+            ..Default::default()
+        };
+
+        game.score(outcome);
+
+        let result = game.outcome.unwrap();
+        assert!(!result.draw);
+        assert!(!result.tie);
+        assert_eq!(result.winner, Some("TeamA".to_string()));
+        // TeamA total: 300, TeamB total: 270, margin: 30
+        assert_eq!(result.runs_margin, Some(30));
     }
 }
