@@ -2,8 +2,8 @@ use std::fs::{DirEntry, File};
 use std::io::Read;
 
 use crate::cricsheet_lib::{Cricsheet, CricsheetInnings, Event};
-use cricket_scoring::scoring::game::Game;
 use cricket_scoring::scoring::innings::Innings;
+use cricket_scoring::scoring::r#match::{Match, MatchResult, WinMargin};
 
 pub fn compare_results(innings_data: &CricsheetInnings, innings: &Innings) {
     // print  cricsheet results
@@ -102,54 +102,91 @@ pub fn format_cricsheet_result(cricsheet: &Cricsheet) -> String {
             .outcome
             .winner
             .clone()
-            .unwrap_or("NO WINNER".to_string()),
+            .unwrap_or(String::new()),
         cricsheet.info.outcome.method.clone().unwrap_or_default()
     )
 }
 
-pub fn format_result(cricket_match: &Game) -> String {
-    let res = cricket_match.outcome.as_ref().unwrap();
-    let mut innings_win_text = String::new();
-    if res.innings_win {
-        innings_win_text = String::from("an innings and ");
+pub fn format_result(cricket_match: &Match) -> String {
+    let Some(result) = &cricket_match.result else {
+        return "NO RESULT".to_string();
+    };
+
+    let is_innings_win = cricket_match.is_innings_victory();
+
+    match result {
+        MatchResult::Team1Won { margin, method } => {
+            let margin_text = if is_innings_win {
+                match margin {
+                    WinMargin::Runs(runs) => format!("by an innings and {} runs", runs),
+                    WinMargin::Wickets(_) => {
+                        // For innings victories, wickets margin doesn't make sense
+                        // Calculate the correct run margin instead
+                        let run_margin = cricket_match.team1_total_runs() - cricket_match.team2_total_runs();
+                        eprintln!("Warning: Innings victory with wickets margin detected - correcting to {} run margin", run_margin);
+                        format!("by an innings and {} runs", run_margin)
+                    },
+                    WinMargin::Award => String::new(),
+                }
+            } else {
+                match margin {
+                    WinMargin::Runs(runs) => format!("by {} runs", runs),
+                    WinMargin::Wickets(wickets) => format!("by {} wickets", wickets),
+                    WinMargin::Award => String::new(),
+                }
+            };
+            let method_text = match method {
+                Some(m) => format!(" {}", m),
+                None => String::new(),
+            };
+            match margin {
+                WinMargin::Award => format!("{} {}", cricket_match.team1.name, method_text),
+                _ => format!("{} Won {}{}", cricket_match.team1.name, margin_text, method_text)
+                }
+        }
+        MatchResult::Team2Won { margin, method } => {
+            let margin_text = if is_innings_win {
+                match margin {
+                    WinMargin::Runs(runs) => format!("by an innings and {} runs", runs),
+                    WinMargin::Wickets(_) => {
+                        // For innings victories, wickets margin doesn't make sense
+                        // Calculate the correct run margin instead
+                        let run_margin = cricket_match.team2_total_runs() - cricket_match.team1_total_runs();
+                        eprintln!("Warning: Innings victory with wickets margin detected - correcting to {} run margin", run_margin);
+                        format!("by an innings and {} runs", run_margin)
+                    },
+                    WinMargin::Award => String::new(),
+                }
+            } else {
+                match margin {
+                    WinMargin::Runs(runs) => format!("by {} runs", runs),
+                    WinMargin::Wickets(wickets) => format!("by {} wickets", wickets),
+                    WinMargin::Award => String::new(),
+                }
+            };
+            let method_text = match method {
+                Some(m) => format!(" {}", m),
+                None => String::new(),
+            };
+            match margin {
+                WinMargin::Award => format!("{} {}", cricket_match.team2.name, method_text),
+                _ => format!("{} Won {}{}", cricket_match.team2.name, margin_text, method_text)
+                }
+        }
+        MatchResult::Tie { method } => {
+            match method {
+                Some(m) => format!("Tie {}", m),
+                None => String::from("Tie"),
+            }
+        }
+        MatchResult::Draw => "Draw".to_string(),
+        MatchResult::NoResult => "no result".to_string(),
     }
-    let draw_win;
-    let mut margin = String::new();
-    if res.draw {
-        draw_win = "Draw";
-    } else if res.tie {
-        draw_win = "tie";
-    } else if !res.result {
-        draw_win = "no result";
-    } else if res.method.clone().unwrap_or_default() == "Awarded" {
-        draw_win = "";
-    } else if res.method.clone().unwrap_or_default() == "Lost fewer wickets" {
-        draw_win = "";
-    } else {
-        draw_win = "Won by";
-    };
-    let mut run_wickets = String::new();
-    if res.runs_margin.is_some() {
-        run_wickets = String::from("runs");
-        margin = format!("{}", res.runs_margin.unwrap());
-    };
-    if res.wickets_margin.is_some() {
-        run_wickets = String::from("wickets");
-        margin = format!("{}", res.wickets_margin.unwrap());
-    };
-    format!(
-        "{} {draw_win} {}{} {} {}",
-        res.winner.clone().unwrap_or("NO WINNER".to_string()),
-        innings_win_text,
-        margin,
-        run_wickets,
-        res.method.clone().unwrap_or_default(),
-    )
 }
 
 pub fn print_diffs(
     cricsheet: &Cricsheet,
-    cricket_match: &Game,
+    cricket_match: &Match,
     cricsheet_result: &str,
     my_result: &str,
     file: DirEntry,

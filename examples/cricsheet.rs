@@ -28,16 +28,22 @@ fn main() {
             compare_results(innings_data, innings);
         }
 
-        cricket_match.score(cricsheet.info.outcome.create_outcome());
+        // Convert cricsheet outcome to MatchResult and set it
+        let match_result = cricsheet
+            .info
+            .outcome
+            .create_match_result(&cricket_match.team1.name, &cricket_match.team2.name);
+        cricket_match.set_result(match_result);
 
         let cricsheet_result = format_cricsheet_result(&cricsheet);
 
         let my_result = format_result(&cricket_match);
 
         if my_result
-            .replace(" ", "")
+            .trim()
             .strip_suffix('0')
             .unwrap_or(&my_result)
+            .replace(" ", "")
             .to_lowercase()
             == cricsheet_result.trim_end().to_lowercase().replace(" ", "")
         {

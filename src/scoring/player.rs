@@ -1,6 +1,7 @@
 use core::fmt;
+use serde::{Deserialize, Serialize};
 
-#[derive(Default, Debug, Clone)]
+#[derive(Default, Debug, Clone, Serialize, Deserialize)]
 pub struct Player {
     pub name: String,
     pub runs: i32,
@@ -10,7 +11,7 @@ pub struct Player {
     pub out: bool,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Team {
     pub players: Vec<Player>,
     pub name: String,

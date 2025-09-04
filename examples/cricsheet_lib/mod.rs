@@ -5,9 +5,9 @@
 use chrono::NaiveDate;
 use cricket_scoring::scoring::{
     ball::{BallEvents, BallOutcome, Wicket as LibWicket},
-    game::{Game, Meta, Outcome as GameOutcome},
     innings::Innings,
     player::{Player, Team},
+    r#match::{Match, MatchResult, MatchType, WinMargin},
 };
 use serde::Deserialize;
 use std::{collections::HashMap, fmt};
@@ -25,19 +25,34 @@ pub struct Cricsheet {
 }
 
 impl Cricsheet {
-    pub fn create_game(&self) -> Game {
-        let cricsheet_teams = self.info.teams.clone();
-        let teams: HashMap<String, Team> = cricsheet_teams
-            .iter()
-            .map(|x| (x.clone(), self.info.clone().team(x)))
-            .collect();
+    pub fn create_game(&self) -> Match {
+        let team1 = self.info.clone().team(&self.info.teams[0]);
+        let team2 = self.info.clone().team(&self.info.teams[1]);
 
-        Game::new(
-            Meta {
-                venue: self.info.venue.clone(),
-            },
-            teams,
-        )
+        let match_type = match self.info.match_type.to_lowercase().as_str() {
+            "test" => MatchType::Test,
+            "odi" => MatchType::OD,
+            "t20" => MatchType::T20,
+            _ => MatchType::Other(self.info.match_type.clone()),
+        };
+
+        let mut cricket_match = Match::new(
+            String::from("1"),
+            format!("{} vs {}", self.info.teams[0], self.info.teams[1]),
+            match_type,
+            team1,
+            team2,
+        );
+
+        if let Some(venue) = &self.info.venue {
+            cricket_match = cricket_match.with_venue(venue.clone());
+        }
+
+        if let Some(first_date) = self.info.dates.first() {
+            cricket_match = cricket_match.with_date(first_date.to_string());
+        }
+
+        cricket_match
     }
 }
 
@@ -104,20 +119,19 @@ pub struct CricsheetInnings {
 }
 
 impl CricsheetInnings {
-    pub fn process_innings(&self, cricket_match: &mut Game) {
+    pub fn process_innings(&self, cricket_match: &mut Match) {
         // initialise the Innings object
         let batting_team_name = &self.team;
-        let mut batting_team: Option<Team> = None;
-        let mut bowling_team: Option<Team> = None;
-        for (team_name, team) in &cricket_match.teams {
-            if team_name == batting_team_name {
-                batting_team = Some(team.clone());
-            } else {
-                bowling_team = Some(team.clone());
-            }
-        }
-        let batting_team = batting_team.unwrap();
-        let bowling_team = bowling_team.unwrap();
+        let batting_team = if batting_team_name == &cricket_match.team1.name {
+            cricket_match.team1.clone()
+        } else {
+            cricket_match.team2.clone()
+        };
+        let bowling_team = if batting_team_name == &cricket_match.team1.name {
+            cricket_match.team2.clone()
+        } else {
+            cricket_match.team1.clone()
+        };
 
         let mut innings = Innings::new(batting_team.clone(), bowling_team.clone());
 
@@ -147,7 +161,7 @@ impl CricsheetInnings {
         if self.penalty_runs.is_some() {
             innings.score.runs += self.penalty_runs.as_ref().unwrap().post.unwrap_or_default();
         }
-        cricket_match.innings.push(innings.clone());
+        cricket_match.add_innings(innings.clone());
     }
 }
 
@@ -385,27 +399,48 @@ pub struct Outcome {
 }
 
 impl Outcome {
-    pub fn create_outcome(&self) -> GameOutcome {
-        match self.by {
-            Some(x) => GameOutcome {
-                draw: self.result == Some(String::from("draw")),
-                tie: self.result == Some(String::from("tie")),
-                winner: self.winner.clone(),
-                method: self.method.clone(),
-                runs_margin: x.runs,
-                wickets_margin: x.wickets,
-                innings_win: x.innings.is_some(),
-                result: self.result != Some(String::from("no result")),
-            },
-            None => GameOutcome {
-                draw: self.result == Some(String::from("draw")),
-                tie: self.result == Some(String::from("tie")),
-                winner: self.winner.clone(),
-                method: self.method.clone(),
-                // result: self.result != Some(String::from("no result")),
-                result: self.method.is_some(),
-                ..Default::default()
-            },
+    pub fn create_match_result(&self, team1_name: &str, team2_name: &str) -> MatchResult {
+        // Handle special cases first
+        if self.result == Some(String::from("draw")) {
+            return MatchResult::Draw;
+        }
+
+        if self.result == Some(String::from("tie")) {
+            let method = self.method.as_ref().map(|m| m.clone());
+            return MatchResult::Tie { method };
+        }
+
+        if self.result == Some(String::from("no result")) {
+            return MatchResult::NoResult;
+        }
+
+        // Handle wins with margins
+        if let Some(winner) = &self.winner {
+            let margin = if let Some(by) = self.by {
+                if let Some(runs) = by.runs {
+                    WinMargin::Runs(runs as u32)
+                } else if let Some(wickets) = by.wickets {
+                    WinMargin::Wickets(wickets as u8)
+                } else {
+                    // No margin specified - likely an awarded match
+                    WinMargin::Award
+                }
+            } else {
+                // No "by" field - match was awarded
+                WinMargin::Award
+            };
+
+            let method = self.method.as_ref().map(|m| m.clone());
+            if winner == team1_name {
+                MatchResult::Team1Won { margin, method }
+            } else if winner == team2_name {
+                MatchResult::Team2Won { margin, method }
+            } else {
+                // Winner name doesn't match either team, fall back to no result
+                MatchResult::NoResult
+            }
+        } else {
+            MatchResult::NoResult
         }
     }
 }

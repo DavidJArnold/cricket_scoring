@@ -1,8 +1,9 @@
+use serde::{Deserialize, Serialize};
 use std::fmt;
 
 pub use super::ball::BallOutcome;
 
-#[derive(Default, Clone, Debug)]
+#[derive(Default, Clone, Debug, Serialize, Deserialize)]
 pub struct CurrentScore {
     pub wickets_left: i32,
     pub wickets_lost: i32,
