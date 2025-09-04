@@ -111,16 +111,16 @@ pub enum MatchStatus {
 /// Method, if it exists, gives a method for the result (e.g. D/L)
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum MatchResult {
-    Team1Won { 
-        margin: WinMargin, 
-        method: Option<String> 
+    Team1Won {
+        margin: WinMargin,
+        method: Option<String>,
     },
-    Team2Won { 
-        margin: WinMargin, 
-        method: Option<String> 
+    Team2Won {
+        margin: WinMargin,
+        method: Option<String>,
     },
-    Tie { 
-        method: Option<String> 
+    Tie {
+        method: Option<String>,
     },
     Draw,
     NoResult,
@@ -327,9 +327,15 @@ impl Match {
                     last_innings_wickets_left.unwrap_or(0),
                 );
                 if team_a == self.team1.name {
-                    Some(MatchResult::Team1Won { margin, method: None })
+                    Some(MatchResult::Team1Won {
+                        margin,
+                        method: None,
+                    })
                 } else {
-                    Some(MatchResult::Team2Won { margin, method: None })
+                    Some(MatchResult::Team2Won {
+                        margin,
+                        method: None,
+                    })
                 }
             }
             std::cmp::Ordering::Equal => Some(MatchResult::Tie { method: None }),
@@ -342,9 +348,15 @@ impl Match {
                     last_innings_wickets_left.unwrap_or(0),
                 );
                 if team_b == self.team1.name {
-                    Some(MatchResult::Team1Won { margin, method: None })
+                    Some(MatchResult::Team1Won {
+                        margin,
+                        method: None,
+                    })
                 } else {
-                    Some(MatchResult::Team2Won { margin, method: None })
+                    Some(MatchResult::Team2Won {
+                        margin,
+                        method: None,
+                    })
                 }
             }
         };
@@ -674,7 +686,10 @@ mod tests {
         };
         assert!(matches!(team2_won, MatchResult::Team2Won { .. }));
 
-        assert!(matches!(MatchResult::Tie { method: None }, MatchResult::Tie { .. }));
+        assert!(matches!(
+            MatchResult::Tie { method: None },
+            MatchResult::Tie { .. }
+        ));
         assert!(matches!(MatchResult::Draw, MatchResult::Draw));
         assert!(matches!(MatchResult::NoResult, MatchResult::NoResult));
     }
@@ -798,7 +813,10 @@ mod tests {
         match_instance.calculate_result();
 
         assert!(matches!(match_instance.status, MatchStatus::Completed));
-        assert!(matches!(match_instance.result.unwrap(), MatchResult::Tie { .. }));
+        assert!(matches!(
+            match_instance.result.unwrap(),
+            MatchResult::Tie { .. }
+        ));
     }
 
     #[test]

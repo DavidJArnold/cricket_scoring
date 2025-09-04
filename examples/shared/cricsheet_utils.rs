@@ -122,10 +122,11 @@ pub fn format_result(cricket_match: &Match) -> String {
                     WinMargin::Wickets(_) => {
                         // For innings victories, wickets margin doesn't make sense
                         // Calculate the correct run margin instead
-                        let run_margin = cricket_match.team1_total_runs() - cricket_match.team2_total_runs();
+                        let run_margin =
+                            cricket_match.team1_total_runs() - cricket_match.team2_total_runs();
                         eprintln!("Warning: Innings victory with wickets margin detected - correcting to {} run margin", run_margin);
                         format!("by an innings and {} runs", run_margin)
-                    },
+                    }
                     WinMargin::Award => String::new(),
                 }
             } else {
@@ -141,8 +142,11 @@ pub fn format_result(cricket_match: &Match) -> String {
             };
             match margin {
                 WinMargin::Award => format!("{} {}", cricket_match.team1.name, method_text),
-                _ => format!("{} Won {}{}", cricket_match.team1.name, margin_text, method_text)
-                }
+                _ => format!(
+                    "{} Won {}{}",
+                    cricket_match.team1.name, margin_text, method_text
+                ),
+            }
         }
         MatchResult::Team2Won { margin, method } => {
             let margin_text = if is_innings_win {
@@ -151,10 +155,11 @@ pub fn format_result(cricket_match: &Match) -> String {
                     WinMargin::Wickets(_) => {
                         // For innings victories, wickets margin doesn't make sense
                         // Calculate the correct run margin instead
-                        let run_margin = cricket_match.team2_total_runs() - cricket_match.team1_total_runs();
+                        let run_margin =
+                            cricket_match.team2_total_runs() - cricket_match.team1_total_runs();
                         eprintln!("Warning: Innings victory with wickets margin detected - correcting to {} run margin", run_margin);
                         format!("by an innings and {} runs", run_margin)
-                    },
+                    }
                     WinMargin::Award => String::new(),
                 }
             } else {
@@ -170,15 +175,16 @@ pub fn format_result(cricket_match: &Match) -> String {
             };
             match margin {
                 WinMargin::Award => format!("{} {}", cricket_match.team2.name, method_text),
-                _ => format!("{} Won {}{}", cricket_match.team2.name, margin_text, method_text)
-                }
-        }
-        MatchResult::Tie { method } => {
-            match method {
-                Some(m) => format!("Tie {}", m),
-                None => String::from("Tie"),
+                _ => format!(
+                    "{} Won {}{}",
+                    cricket_match.team2.name, margin_text, method_text
+                ),
             }
         }
+        MatchResult::Tie { method } => match method {
+            Some(m) => format!("Tie {}", m),
+            None => String::from("Tie"),
+        },
         MatchResult::Draw => "Draw".to_string(),
         MatchResult::NoResult => "no result".to_string(),
     }

@@ -1,5 +1,5 @@
 // Example demonstrating the method field in MatchResult
-use cricket_scoring::{Match, MatchType, Team, Player, MatchResult, WinMargin};
+use cricket_scoring::{Match, MatchResult, MatchType, Player, Team, WinMargin};
 
 fn main() {
     // Create teams
@@ -10,7 +10,7 @@ fn main() {
             Player::new("David Warner".to_string()),
         ],
     };
-    
+
     let team2 = Team {
         name: "England".to_string(),
         players: vec![
