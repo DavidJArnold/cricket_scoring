@@ -2,20 +2,18 @@
 
 // Module used to parse cricsheet files into native types
 
-use chrono::NaiveDate;
 use crate::scoring::{
     ball::{BallEvents, BallOutcome, Wicket as LibWicket},
     innings::Innings,
     player::{Player, Team},
     r#match::{Match, MatchResult, MatchType, WinMargin},
 };
+use chrono::NaiveDate;
 use serde::Deserialize;
 use std::{collections::HashMap, fmt};
 
 mod custom_deserialisers;
-use custom_deserialisers::{
-    deserialize_to_option_string, deserialize_to_string,
-};
+use custom_deserialisers::{deserialize_to_option_string, deserialize_to_string};
 
 pub mod utils;
 
