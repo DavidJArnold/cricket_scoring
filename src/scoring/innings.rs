@@ -1,8 +1,9 @@
+use serde::{Deserialize, Serialize};
 use std::fmt;
 
 use super::{player::Team, score::BallOutcome, score::CurrentScore};
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Innings {
     pub score: CurrentScore,
     pub batting_team: Team,
