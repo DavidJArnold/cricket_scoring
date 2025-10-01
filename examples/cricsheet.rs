@@ -1,13 +1,12 @@
-mod cricsheet_lib;
-#[path = "shared/cricsheet_utils.rs"]
-mod cricsheet_utils;
-use cricsheet_utils::{
+use cricket_scoring::cricsheet::utils::{
     compare_results, format_cricsheet_result, format_result, get_cricsheet_game, print_diffs,
 };
 
 fn main() {
     // parse a set of cricsheet games
-    let cricsheet_directory = "examples/all_matches";
+    let cricsheet_directory = std::env::args()
+        .nth(1)
+        .unwrap_or_else(|| "examples/all_matches".to_string());
     let mut read_files = 0;
     let mut correct_result = 0;
     for file in std::fs::read_dir(cricsheet_directory).unwrap() {
