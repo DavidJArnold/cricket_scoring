@@ -1,6 +1,17 @@
 use core::fmt;
 use serde::{Deserialize, Serialize};
 
+/// Represents a cricket player with their batting statistics.
+///
+/// # Fields
+///
+/// * `name` - The player's name
+/// * `runs` - Total runs scored
+/// * `balls_faced` - Number of balls faced
+/// * `fours` - Number of boundaries (4 runs)
+/// * `sixes` - Number of sixes (6 runs)
+/// * `out` - Whether the player is out
+/// * `dismissal` - The type of dismissal if the player is out (e.g., "bowled", "caught", "run out")
 #[derive(Default, Debug, Clone, Serialize, Deserialize)]
 pub struct Player {
     pub name: String,
@@ -9,6 +20,9 @@ pub struct Player {
     pub fours: i32,
     pub sixes: i32,
     pub out: bool,
+    /// The method of dismissal (e.g., "bowled", "caught", "lbw", "run out").
+    /// Set to `None` if the player is not out.
+    pub dismissal: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -77,6 +91,7 @@ mod tests {
         assert_eq!(player.fours, 0);
         assert_eq!(player.sixes, 0);
         assert!(!player.out);
+        assert_eq!(player.dismissal, None);
     }
 
     #[test]
@@ -88,6 +103,7 @@ mod tests {
         assert_eq!(player.fours, 0);
         assert_eq!(player.sixes, 0);
         assert!(!player.out);
+        assert_eq!(player.dismissal, None);
     }
 
     #[test]
@@ -98,6 +114,7 @@ mod tests {
         player.fours = 6;
         player.sixes = 2;
         player.out = true;
+        player.dismissal = Some("caught".to_string());
 
         let cloned = player.clone();
         assert_eq!(player.name, cloned.name);
@@ -106,6 +123,7 @@ mod tests {
         assert_eq!(player.fours, cloned.fours);
         assert_eq!(player.sixes, cloned.sixes);
         assert_eq!(player.out, cloned.out);
+        assert_eq!(player.dismissal, cloned.dismissal);
     }
 
     #[test]

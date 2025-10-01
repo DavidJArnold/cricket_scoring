@@ -9,11 +9,13 @@ fn test_player_serialization() {
     player.fours = 6;
     player.sixes = 2;
     player.out = true;
+    player.dismissal = Some("caught".to_string());
 
     // Test serialization
     let json = serde_json::to_string(&player).unwrap();
     assert!(json.contains("Test Player"));
     assert!(json.contains("50"));
+    assert!(json.contains("caught"));
 
     // Test deserialization
     let deserialized: Player = serde_json::from_str(&json).unwrap();
@@ -23,6 +25,7 @@ fn test_player_serialization() {
     assert_eq!(deserialized.fours, 6);
     assert_eq!(deserialized.sixes, 2);
     assert!(deserialized.out);
+    assert_eq!(deserialized.dismissal, Some("caught".to_string()));
 }
 
 #[test]

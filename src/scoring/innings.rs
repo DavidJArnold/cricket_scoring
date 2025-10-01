@@ -62,10 +62,12 @@ impl Innings {
                 let out_striker = self.batting_team.players.get_mut(self.on_strike).unwrap();
                 if player_out.contains(&out_striker.name) {
                     out_striker.out = true;
+                    out_striker.dismissal = Some(wicket.kind.clone());
                     self.on_strike = self.on_strike.max(self.off_strike) + 1;
                 } else {
                     let non_striker = self.batting_team.players.get_mut(self.off_strike).unwrap();
                     non_striker.out = true;
+                    non_striker.dismissal = Some(wicket.kind.clone());
                     self.off_strike = self.on_strike.max(self.off_strike) + 1;
                 };
             }
@@ -315,6 +317,10 @@ mod tests {
         innings.score_ball(&ball_outcome);
 
         assert!(innings.batting_team.players[0].out);
+        assert_eq!(
+            innings.batting_team.players[0].dismissal,
+            Some("bowled".to_string())
+        );
         assert_eq!(innings.on_strike, 2); // Next batsman comes in
         assert_eq!(innings.off_strike, 1); // Non-striker stays
         assert_eq!(innings.score.wickets_lost, 1);
@@ -334,7 +340,12 @@ mod tests {
         innings.score_ball(&ball_outcome);
 
         assert!(!innings.batting_team.players[0].out); // On-strike batsman is fine
+        assert_eq!(innings.batting_team.players[0].dismissal, None); // No dismissal for on-strike
         assert!(innings.batting_team.players[1].out); // Off-strike batsman is out
+        assert_eq!(
+            innings.batting_team.players[1].dismissal,
+            Some("run out".to_string())
+        );
         assert_eq!(innings.on_strike, 0); // Striker stays
         assert_eq!(innings.off_strike, 2); // Next batsman comes in
         assert_eq!(innings.score.wickets_lost, 1);
