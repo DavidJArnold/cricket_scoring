@@ -5,7 +5,12 @@ use cricket_scoring::scoring::ball::{BallEvents, BallOutcome};
 use cricket_scoring::scoring::player::Team;
 use cricket_scoring::scoring::{innings::Innings, player::Player};
 
-fn parse(ball: &str, on_strike: &Player, off_strike: &Player) -> Result<BallOutcome, BallString> {
+fn parse(
+    ball: &str,
+    on_strike: &Player,
+    off_strike: &Player,
+    bowler: &Player,
+) -> Result<BallOutcome, BallString> {
     // basic format is runs followed by extra events:
     //   1: 1 run
     //   .: No run
@@ -90,6 +95,7 @@ fn parse(ball: &str, on_strike: &Player, off_strike: &Player) -> Result<BallOutc
         ball_events,
         on_strike.clone(),
         off_strike.clone(),
+        bowler.clone(),
     ))
 }
 
@@ -117,13 +123,14 @@ fn main() {
         if ball_desc.len() == 1 && ball_desc.starts_with('N') {
             innings.over();
         } else {
+            let bowler = innings.bowling_team.players.get(0).unwrap();
             let on_strike = innings.batting_team.players.get(innings.on_strike).unwrap();
             let off_strike = innings
                 .batting_team
                 .players
                 .get(innings.off_strike)
                 .unwrap();
-            let ball_outcome = parse(ball_desc, on_strike, off_strike).unwrap();
+            let ball_outcome = parse(ball_desc, on_strike, off_strike, bowler).unwrap();
             ball_outcome.validate().unwrap();
             innings.score_ball(&ball_outcome);
             println!("{}", innings.score);

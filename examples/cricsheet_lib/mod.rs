@@ -143,6 +143,12 @@ impl CricsheetInnings {
         // iterate through overs and balls
         for over in self.overs.clone().unwrap_or_default() {
             for ball in &over.deliveries {
+                let bowler = bowling_team
+                    .players
+                    .iter()
+                    .find(|p| p.name == ball.bowler)
+                    .unwrap()
+                    .clone();
                 let ball_outcome = ball.parse(
                     batting_team.players.get(innings.on_strike).unwrap().clone(),
                     batting_team
@@ -150,6 +156,7 @@ impl CricsheetInnings {
                         .get(innings.off_strike)
                         .unwrap()
                         .clone(),
+                    bowler,
                 );
                 innings.score_ball(&ball_outcome);
             }
@@ -211,7 +218,7 @@ pub struct Delivery {
 }
 
 impl Delivery {
-    pub fn parse(&self, striker: Player, non_striker: Player) -> BallOutcome {
+    pub fn parse(&self, striker: Player, non_striker: Player, bowler: Player) -> BallOutcome {
         let mut ball_events: Vec<BallEvents> = Vec::new();
         if self.extras.is_some() {
             if self.extras.clone().unwrap().byes.is_some() {
@@ -258,7 +265,7 @@ impl Delivery {
             ball_events.push(BallEvents::Six);
         }
 
-        let ball_outcome = BallOutcome::new(self.runs.batter, ball_events, striker, non_striker);
+        let ball_outcome = BallOutcome::new(self.runs.batter, ball_events, striker, non_striker, bowler);
         ball_outcome.validate().unwrap();
         ball_outcome
     }

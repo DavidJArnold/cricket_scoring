@@ -146,12 +146,22 @@ mod tests {
         assert_eq!(score.ball, cloned.ball);
     }
 
+    fn create_test_ball_outcome() -> BallOutcome {
+        use crate::scoring::player::Player;
+        BallOutcome {
+            on_strike: Player::new("Striker".to_string()),
+            off_strike: Player::new("NonStriker".to_string()),
+            bowler: Player::new("Bowler".to_string()),
+            ..Default::default()
+        }
+    }
+
     #[test]
     fn test_score_ball_simple_runs() {
         let mut score = CurrentScore::new();
         let ball_outcome = BallOutcome {
             runs: 2,
-            ..Default::default()
+            ..create_test_ball_outcome()
         };
 
         score.score_ball(&ball_outcome);
@@ -168,7 +178,7 @@ mod tests {
         let ball_outcome = BallOutcome {
             runs: 0,
             wicket: Some(wicket),
-            ..Default::default()
+            ..create_test_ball_outcome()
         };
 
         score.score_ball(&ball_outcome);
@@ -185,7 +195,7 @@ mod tests {
         let ball_outcome = BallOutcome {
             runs: 2,
             wide: Some(1),
-            ..Default::default()
+            ..create_test_ball_outcome()
         };
 
         score.score_ball(&ball_outcome);
@@ -201,7 +211,7 @@ mod tests {
         let ball_outcome = BallOutcome {
             runs: 1,
             no_ball: Some(1),
-            ..Default::default()
+            ..create_test_ball_outcome()
         };
 
         score.score_ball(&ball_outcome);
@@ -217,7 +227,7 @@ mod tests {
         let ball_outcome = BallOutcome {
             runs: 2,
             byes: Some(2),
-            ..Default::default()
+            ..create_test_ball_outcome()
         };
 
         score.score_ball(&ball_outcome);
@@ -233,7 +243,7 @@ mod tests {
         let ball_outcome = BallOutcome {
             runs: 1,
             leg_byes: Some(1),
-            ..Default::default()
+            ..create_test_ball_outcome()
         };
 
         score.score_ball(&ball_outcome);
@@ -249,7 +259,7 @@ mod tests {
         let ball_outcome = BallOutcome {
             runs: 0,
             penalty: Some(5),
-            ..Default::default()
+            ..create_test_ball_outcome()
         };
 
         score.score_ball(&ball_outcome);
@@ -266,7 +276,7 @@ mod tests {
             runs: 1,
             wicket: Some(wicket),
             no_ball: Some(1),
-            ..Default::default()
+            ..create_test_ball_outcome()
         };
 
         score.score_ball(&ball_outcome);
@@ -285,7 +295,7 @@ mod tests {
         let ball_outcome = BallOutcome {
             runs: 0,
             wicket: Some(wicket),
-            ..Default::default()
+            ..create_test_ball_outcome()
         };
 
         score.score_ball(&ball_outcome);
@@ -301,7 +311,7 @@ mod tests {
         let ball_outcome = BallOutcome {
             runs: 0,
             wicket: Some(wicket),
-            ..Default::default()
+            ..create_test_ball_outcome()
         };
 
         score.score_ball(&ball_outcome);
@@ -318,7 +328,7 @@ mod tests {
         for _ in 0..6 {
             let ball_outcome = BallOutcome {
                 runs: 1,
-                ..Default::default()
+                ..create_test_ball_outcome()
             };
             score.score_ball(&ball_outcome);
         }
@@ -371,7 +381,7 @@ mod tests {
         let ball_outcome = BallOutcome {
             runs: 0,
             wicket: Some(wickets),
-            ..Default::default()
+            ..create_test_ball_outcome()
         };
 
         score.score_ball(&ball_outcome);
@@ -389,7 +399,7 @@ mod tests {
             for ball in 0..6 {
                 let ball_outcome = BallOutcome {
                     runs: 1,
-                    ..Default::default()
+                    ..create_test_ball_outcome()
                 };
                 score.score_ball(&ball_outcome);
 

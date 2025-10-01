@@ -114,6 +114,7 @@ mod tests {
             events,
             Player::new("Striker".to_string()),
             Player::new("NonStriker".to_string()),
+            Player::new("Bowler".to_string()),
         )
     }
 

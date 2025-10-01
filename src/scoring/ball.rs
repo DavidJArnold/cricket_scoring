@@ -34,6 +34,7 @@ pub struct BallOutcome {
     pub six: bool,
     pub on_strike: Player,
     pub off_strike: Player,
+    pub bowler: Player,
     pub penalty: Option<i32>,
 }
 
@@ -44,11 +45,13 @@ impl BallOutcome {
         ball_events: Vec<BallEvents>,
         on_strike: Player,
         off_strike: Player,
+        bowler: Player,
     ) -> BallOutcome {
         let mut outcome = BallOutcome {
             runs,
             on_strike,
             off_strike,
+            bowler,
             ..BallOutcome::default()
         };
         for event in ball_events {
@@ -161,12 +164,20 @@ mod tests {
     fn test_ball_outcome_new_simple() {
         let on_strike = create_test_player("Batsman1");
         let off_strike = create_test_player("Batsman2");
+        let bowler = create_test_player("Bowler");
 
-        let outcome = BallOutcome::new(1, vec![], on_strike.clone(), off_strike.clone());
+        let outcome = BallOutcome::new(
+            1,
+            vec![],
+            on_strike.clone(),
+            off_strike.clone(),
+            bowler.clone(),
+        );
 
         assert_eq!(outcome.runs, 1);
         assert_eq!(outcome.on_strike.name, "Batsman1");
         assert_eq!(outcome.off_strike.name, "Batsman2");
+        assert_eq!(outcome.bowler.name, "Bowler");
         assert!(outcome.wicket.is_none());
         assert!(!outcome.four);
         assert!(!outcome.six);
@@ -176,8 +187,9 @@ mod tests {
     fn test_ball_outcome_new_with_four() {
         let on_strike = create_test_player("Batsman1");
         let off_strike = create_test_player("Batsman2");
+        let bowler = create_test_player("Bowler");
 
-        let outcome = BallOutcome::new(4, vec![BallEvents::Four], on_strike, off_strike);
+        let outcome = BallOutcome::new(4, vec![BallEvents::Four], on_strike, off_strike, bowler);
 
         assert_eq!(outcome.runs, 4);
         assert!(outcome.four);
@@ -188,8 +200,9 @@ mod tests {
     fn test_ball_outcome_new_with_six() {
         let on_strike = create_test_player("Batsman1");
         let off_strike = create_test_player("Batsman2");
+        let bowler = create_test_player("Bowler");
 
-        let outcome = BallOutcome::new(6, vec![BallEvents::Six], on_strike, off_strike);
+        let outcome = BallOutcome::new(6, vec![BallEvents::Six], on_strike, off_strike, bowler);
 
         assert_eq!(outcome.runs, 6);
         assert!(!outcome.four);
@@ -200,6 +213,7 @@ mod tests {
     fn test_ball_outcome_new_with_wicket() {
         let on_strike = create_test_player("Batsman1");
         let off_strike = create_test_player("Batsman2");
+        let bowler = create_test_player("Bowler");
         let wicket = vec![Wicket {
             player_out: "Batsman1".to_string(),
             kind: "bowled".to_string(),
@@ -210,6 +224,7 @@ mod tests {
             vec![BallEvents::Wicket(wicket.clone())],
             on_strike,
             off_strike,
+            bowler,
         );
 
         assert_eq!(outcome.runs, 0);
@@ -220,8 +235,9 @@ mod tests {
     fn test_ball_outcome_new_with_wide() {
         let on_strike = create_test_player("Batsman1");
         let off_strike = create_test_player("Batsman2");
+        let bowler = create_test_player("Bowler");
 
-        let outcome = BallOutcome::new(1, vec![BallEvents::Wide(1)], on_strike, off_strike);
+        let outcome = BallOutcome::new(1, vec![BallEvents::Wide(1)], on_strike, off_strike, bowler);
 
         assert_eq!(outcome.runs, 1);
         assert_eq!(outcome.wide, Some(1));
@@ -231,8 +247,15 @@ mod tests {
     fn test_ball_outcome_new_with_no_ball() {
         let on_strike = create_test_player("Batsman1");
         let off_strike = create_test_player("Batsman2");
+        let bowler = create_test_player("Bowler");
 
-        let outcome = BallOutcome::new(1, vec![BallEvents::NoBall(1)], on_strike, off_strike);
+        let outcome = BallOutcome::new(
+            1,
+            vec![BallEvents::NoBall(1)],
+            on_strike,
+            off_strike,
+            bowler,
+        );
 
         assert_eq!(outcome.runs, 1);
         assert_eq!(outcome.no_ball, Some(1));
@@ -242,8 +265,9 @@ mod tests {
     fn test_ball_outcome_new_with_bye() {
         let on_strike = create_test_player("Batsman1");
         let off_strike = create_test_player("Batsman2");
+        let bowler = create_test_player("Bowler");
 
-        let outcome = BallOutcome::new(2, vec![BallEvents::Bye(2)], on_strike, off_strike);
+        let outcome = BallOutcome::new(2, vec![BallEvents::Bye(2)], on_strike, off_strike, bowler);
 
         assert_eq!(outcome.runs, 2);
         assert_eq!(outcome.byes, Some(2));
@@ -253,8 +277,15 @@ mod tests {
     fn test_ball_outcome_new_with_leg_bye() {
         let on_strike = create_test_player("Batsman1");
         let off_strike = create_test_player("Batsman2");
+        let bowler = create_test_player("Bowler");
 
-        let outcome = BallOutcome::new(1, vec![BallEvents::LegBye(1)], on_strike, off_strike);
+        let outcome = BallOutcome::new(
+            1,
+            vec![BallEvents::LegBye(1)],
+            on_strike,
+            off_strike,
+            bowler,
+        );
 
         assert_eq!(outcome.runs, 1);
         assert_eq!(outcome.leg_byes, Some(1));
@@ -264,8 +295,15 @@ mod tests {
     fn test_ball_outcome_new_with_penalty() {
         let on_strike = create_test_player("Batsman1");
         let off_strike = create_test_player("Batsman2");
+        let bowler = create_test_player("Bowler");
 
-        let outcome = BallOutcome::new(5, vec![BallEvents::Penalty(5)], on_strike, off_strike);
+        let outcome = BallOutcome::new(
+            5,
+            vec![BallEvents::Penalty(5)],
+            on_strike,
+            off_strike,
+            bowler,
+        );
 
         assert_eq!(outcome.runs, 5);
         assert_eq!(outcome.penalty, Some(5));
@@ -275,12 +313,14 @@ mod tests {
     fn test_ball_outcome_new_with_multiple_events() {
         let on_strike = create_test_player("Batsman1");
         let off_strike = create_test_player("Batsman2");
+        let bowler = create_test_player("Bowler");
 
         let outcome = BallOutcome::new(
             5,
             vec![BallEvents::NoBall(1), BallEvents::Four],
             on_strike,
             off_strike,
+            bowler,
         );
 
         assert_eq!(outcome.runs, 5);
@@ -292,8 +332,9 @@ mod tests {
     fn test_validate_valid_outcome() {
         let on_strike = create_test_player("Batsman1");
         let off_strike = create_test_player("Batsman2");
+        let bowler = create_test_player("Bowler");
 
-        let outcome = BallOutcome::new(1, vec![], on_strike, off_strike);
+        let outcome = BallOutcome::new(1, vec![], on_strike, off_strike, bowler);
         assert!(outcome.validate().is_ok());
     }
 
@@ -301,8 +342,10 @@ mod tests {
     fn test_validate_four_and_six_error() {
         let on_strike = create_test_player("Batsman1");
         let off_strike = create_test_player("Batsman2");
+        let bowler = create_test_player("Bowler");
 
-        let mut outcome = BallOutcome::new(4, vec![BallEvents::Four], on_strike, off_strike);
+        let mut outcome =
+            BallOutcome::new(4, vec![BallEvents::Four], on_strike, off_strike, bowler);
         outcome.six = true; // Manually set both four and six
 
         let result = outcome.validate();
@@ -319,8 +362,10 @@ mod tests {
     fn test_validate_bye_and_leg_bye_error() {
         let on_strike = create_test_player("Batsman1");
         let off_strike = create_test_player("Batsman2");
+        let bowler = create_test_player("Bowler");
 
-        let mut outcome = BallOutcome::new(2, vec![BallEvents::Bye(2)], on_strike, off_strike);
+        let mut outcome =
+            BallOutcome::new(2, vec![BallEvents::Bye(2)], on_strike, off_strike, bowler);
         outcome.leg_byes = Some(1); // Manually set both byes and leg byes
 
         let result = outcome.validate();
@@ -337,6 +382,7 @@ mod tests {
     fn test_validate_complex_valid_outcome() {
         let on_strike = create_test_player("Batsman1");
         let off_strike = create_test_player("Batsman2");
+        let bowler = create_test_player("Bowler");
         let wicket = vec![Wicket {
             player_out: "Batsman1".to_string(),
             kind: "caught".to_string(),
@@ -347,6 +393,7 @@ mod tests {
             vec![BallEvents::Wicket(wicket), BallEvents::NoBall(1)],
             on_strike,
             off_strike,
+            bowler,
         );
 
         assert!(outcome.validate().is_ok());
