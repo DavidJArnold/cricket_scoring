@@ -33,10 +33,12 @@ impl Innings {
 
     /// # Panics
     ///
-    /// Will panic if the `on_strike` player isn't part of the team
+    /// Will panic if the `on_strike` player isn't part of the team or if the bowler isn't found in the bowling team
     /// This shouldn't happen...
     pub fn score_ball(&mut self, ball_outcome: &BallOutcome) {
         self.score.score_ball(ball_outcome);
+
+        // Update batting stats
         let striker = self.batting_team.players.get_mut(self.on_strike).unwrap();
 
         if ball_outcome.wide.is_none() && ball_outcome.no_ball.is_none() {
@@ -49,6 +51,35 @@ impl Innings {
                 if ball_outcome.six {
                     striker.sixes += 1;
                 }
+            }
+        }
+
+        // Update bowling stats
+        if let Some(bowler) = self
+            .bowling_team
+            .players
+            .iter_mut()
+            .find(|p| p.name == ball_outcome.bowler.name)
+        {
+            // Count legal deliveries (not wides or no balls)
+            if ball_outcome.wide.is_none() && ball_outcome.no_ball.is_none() {
+                bowler.balls_bowled += 1;
+            }
+
+            // Track runs conceded (including byes and leg byes count as runs conceded)
+            bowler.runs_conceded += ball_outcome.runs;
+
+            // Track wickets
+            if let Some(wickets) = &ball_outcome.wicket {
+                bowler.wickets_taken += wickets.len() as i32;
+            }
+
+            // Track wides and no balls
+            if ball_outcome.wide.is_some() {
+                bowler.wides += 1;
+            }
+            if ball_outcome.no_ball.is_some() {
+                bowler.no_balls += 1;
             }
         }
 
@@ -376,7 +407,8 @@ mod tests {
 
         let display = format!("{}", innings);
         assert!(display.contains("0/4")); // Score
-        assert!(display.contains("Player1: 4*(1), 1 4s, 0 6s, SR: 400.00")); // Player who batted
+        assert!(display.contains("Player1: Batting: 4*(1), 1 4s, 0 6s, SR: 400.00"));
+        // Player who batted
     }
 
     #[test]
