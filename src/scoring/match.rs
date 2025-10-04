@@ -81,6 +81,7 @@ pub struct Match {
     pub status: MatchStatus,
     /// Final result of the match if completed
     pub result: Option<MatchResult>,
+    pub event: Option<String>,
 }
 
 /// Types of cricket matches
@@ -152,6 +153,7 @@ impl Match {
             innings: Vec::new(),
             status: MatchStatus::NotStarted,
             result: None,
+            event: None,
         }
     }
 
@@ -165,6 +167,11 @@ impl Match {
     pub fn with_date(mut self, date: String) -> Self {
         self.date = Some(date);
         self
+    }
+
+    /// Set the event the match is part of
+    pub fn with_event(&mut self, event: String) {
+        self.event = Some(event);
     }
 
     /// Adds an innings to the match

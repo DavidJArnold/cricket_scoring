@@ -52,6 +52,10 @@ impl Cricsheet {
             cricket_match = cricket_match.with_date(first_date.to_string());
         }
 
+        if let Some(event) = &self.info.event {
+            cricket_match.with_event(event.name.clone());
+        }
+
         cricket_match
     }
 }
