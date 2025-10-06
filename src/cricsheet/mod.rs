@@ -147,21 +147,29 @@ impl CricsheetInnings {
         // iterate through overs and balls
         for over in self.overs.clone().unwrap_or_default() {
             for ball in &over.deliveries {
+                // Look up the actual striker and non-striker from the delivery data
+                let striker = batting_team
+                    .players
+                    .iter()
+                    .find(|p| p.name == ball.batter)
+                    .expect("Batter from delivery not found in batting team")
+                    .clone();
+
+                let non_striker = batting_team
+                    .players
+                    .iter()
+                    .find(|p| p.name == ball.non_striker)
+                    .expect("Non-striker from delivery not found in batting team")
+                    .clone();
+
                 let bowler = bowling_team
                     .players
                     .iter()
                     .find(|p| p.name == ball.bowler)
                     .unwrap()
                     .clone();
-                let ball_outcome = ball.parse(
-                    batting_team.players.get(innings.on_strike).unwrap().clone(),
-                    batting_team
-                        .players
-                        .get(innings.off_strike)
-                        .unwrap()
-                        .clone(),
-                    bowler,
-                );
+
+                let ball_outcome = ball.parse(striker, non_striker, bowler);
                 innings.score_ball(&ball_outcome);
             }
             innings.over();
@@ -173,6 +181,75 @@ impl CricsheetInnings {
             innings.score.runs += self.penalty_runs.as_ref().unwrap().post.unwrap_or_default();
         }
         cricket_match.add_innings(innings.clone());
+    }
+
+    pub fn process_innings_with_states(&self, team1: Team, team2: Team) -> Vec<Innings> {
+        let mut states = Vec::new();
+
+        // initialise the Innings object
+        let batting_team_name = &self.team;
+        let batting_team = if batting_team_name == &team1.name {
+            team1.clone()
+        } else {
+            team2.clone()
+        };
+        let bowling_team = if batting_team_name == &team1.name {
+            team2.clone()
+        } else {
+            team1.clone()
+        };
+
+        let mut innings = Innings::new(batting_team.clone(), bowling_team.clone());
+
+        // check for penalty runs
+        if self.penalty_runs.is_some() {
+            innings.score.runs = self.penalty_runs.as_ref().unwrap().pre.unwrap_or_default();
+        }
+
+        // iterate through overs and balls
+        for over in self.overs.clone().unwrap_or_default() {
+            for ball in &over.deliveries {
+                // Look up the actual striker and non-striker from the delivery data
+                let striker = batting_team
+                    .players
+                    .iter()
+                    .find(|p| p.name == ball.batter)
+                    .expect("Batter from delivery not found in batting team")
+                    .clone();
+
+                let non_striker = batting_team
+                    .players
+                    .iter()
+                    .find(|p| p.name == ball.non_striker)
+                    .expect("Non-striker from delivery not found in batting team")
+                    .clone();
+
+                let bowler = bowling_team
+                    .players
+                    .iter()
+                    .find(|p| p.name == ball.bowler)
+                    .unwrap()
+                    .clone();
+
+                let ball_outcome = ball.parse(striker, non_striker, bowler);
+                innings.score_ball(&ball_outcome);
+                states.push(innings.clone());
+            }
+            innings.over();
+        }
+        innings.finished = true;
+
+        // check for penalty runs
+        if self.penalty_runs.is_some() {
+            innings.score.runs += self.penalty_runs.as_ref().unwrap().post.unwrap_or_default();
+        }
+
+        // Update the last state with the final innings (with finished flag and post-penalty runs)
+        if let Some(last) = states.last_mut() {
+            *last = innings;
+        }
+
+        states
     }
 }
 

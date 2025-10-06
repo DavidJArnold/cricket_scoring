@@ -38,8 +38,28 @@ impl Innings {
     pub fn score_ball(&mut self, ball_outcome: &BallOutcome) {
         self.score.score_ball(ball_outcome);
 
+        // Find the striker by name from the BallOutcome (source of truth)
+        let striker_index = self
+            .batting_team
+            .players
+            .iter()
+            .position(|p| p.name == ball_outcome.on_strike.name)
+            .expect("Striker from BallOutcome not found in batting team");
+
+        // Find the non-striker by name from the BallOutcome (source of truth)
+        let non_striker_index = self
+            .batting_team
+            .players
+            .iter()
+            .position(|p| p.name == ball_outcome.off_strike.name)
+            .expect("Non-striker from BallOutcome not found in batting team");
+
+        // Update tracked indices to match reality
+        self.on_strike = striker_index;
+        self.off_strike = non_striker_index;
+
         // Update batting stats
-        let striker = self.batting_team.players.get_mut(self.on_strike).unwrap();
+        let striker = self.batting_team.players.get_mut(striker_index).unwrap();
 
         if ball_outcome.wide.is_none() && ball_outcome.no_ball.is_none() {
             striker.balls_faced += 1;
@@ -89,18 +109,24 @@ impl Innings {
 
         if ball_outcome.wicket.is_some() {
             for wicket in ball_outcome.wicket.as_ref().unwrap() {
-                let player_out = wicket.player_out.clone();
-                let out_striker = self.batting_team.players.get_mut(self.on_strike).unwrap();
-                if player_out.contains(&out_striker.name) {
-                    out_striker.out = true;
-                    out_striker.dismissal = Some(wicket.kind.clone());
+                // Find the player who got out by matching the name
+                let out_player_index = self
+                    .batting_team
+                    .players
+                    .iter()
+                    .position(|p| wicket.player_out.contains(&p.name))
+                    .expect("Player from wicket not found in batting team");
+
+                let out_player = self.batting_team.players.get_mut(out_player_index).unwrap();
+                out_player.out = true;
+                out_player.dismissal = Some(wicket.kind.clone());
+
+                // Bring in next batsman based on who got out
+                if out_player_index == self.on_strike {
                     self.on_strike = self.on_strike.max(self.off_strike) + 1;
                 } else {
-                    let non_striker = self.batting_team.players.get_mut(self.off_strike).unwrap();
-                    non_striker.out = true;
-                    non_striker.dismissal = Some(wicket.kind.clone());
                     self.off_strike = self.on_strike.max(self.off_strike) + 1;
-                };
+                }
             }
         }
     }
@@ -139,12 +165,17 @@ mod tests {
         }
     }
 
-    fn create_test_ball_outcome(runs: i32, events: Vec<BallEvents>) -> BallOutcome {
+    fn create_test_ball_outcome(
+        runs: i32,
+        events: Vec<BallEvents>,
+        striker: Player,
+        non_striker: Player,
+    ) -> BallOutcome {
         BallOutcome::new(
             runs,
             events,
-            Player::new("Striker".to_string()),
-            Player::new("NonStriker".to_string()),
+            striker,
+            non_striker,
             Player::new("Bowler".to_string()),
         )
     }
@@ -204,9 +235,14 @@ mod tests {
     fn test_score_ball_simple() {
         let batting_team = create_test_team("Team A");
         let bowling_team = create_test_team("Team B");
-        let mut innings = Innings::new(batting_team, bowling_team);
+        let mut innings = Innings::new(batting_team.clone(), bowling_team);
 
-        let ball_outcome = create_test_ball_outcome(1, vec![]);
+        let ball_outcome = create_test_ball_outcome(
+            1,
+            vec![],
+            batting_team.players[0].clone(),
+            batting_team.players[1].clone(),
+        );
         innings.score_ball(&ball_outcome);
 
         assert_eq!(innings.score.runs, 1);
@@ -219,9 +255,14 @@ mod tests {
     fn test_score_ball_four() {
         let batting_team = create_test_team("Team A");
         let bowling_team = create_test_team("Team B");
-        let mut innings = Innings::new(batting_team, bowling_team);
+        let mut innings = Innings::new(batting_team.clone(), bowling_team);
 
-        let ball_outcome = create_test_ball_outcome(4, vec![BallEvents::Four]);
+        let ball_outcome = create_test_ball_outcome(
+            4,
+            vec![BallEvents::Four],
+            batting_team.players[0].clone(),
+            batting_team.players[1].clone(),
+        );
         innings.score_ball(&ball_outcome);
 
         assert_eq!(innings.score.runs, 4);
@@ -234,9 +275,14 @@ mod tests {
     fn test_score_ball_six() {
         let batting_team = create_test_team("Team A");
         let bowling_team = create_test_team("Team B");
-        let mut innings = Innings::new(batting_team, bowling_team);
+        let mut innings = Innings::new(batting_team.clone(), bowling_team);
 
-        let ball_outcome = create_test_ball_outcome(6, vec![BallEvents::Six]);
+        let ball_outcome = create_test_ball_outcome(
+            6,
+            vec![BallEvents::Six],
+            batting_team.players[0].clone(),
+            batting_team.players[1].clone(),
+        );
         innings.score_ball(&ball_outcome);
 
         assert_eq!(innings.score.runs, 6);
@@ -249,9 +295,14 @@ mod tests {
     fn test_score_ball_wide() {
         let batting_team = create_test_team("Team A");
         let bowling_team = create_test_team("Team B");
-        let mut innings = Innings::new(batting_team, bowling_team);
+        let mut innings = Innings::new(batting_team.clone(), bowling_team);
 
-        let ball_outcome = create_test_ball_outcome(1, vec![BallEvents::Wide(1)]);
+        let ball_outcome = create_test_ball_outcome(
+            1,
+            vec![BallEvents::Wide(1)],
+            batting_team.players[0].clone(),
+            batting_team.players[1].clone(),
+        );
         innings.score_ball(&ball_outcome);
 
         assert_eq!(innings.score.runs, 2); // 1 run + 1 wide
@@ -263,9 +314,14 @@ mod tests {
     fn test_score_ball_no_ball() {
         let batting_team = create_test_team("Team A");
         let bowling_team = create_test_team("Team B");
-        let mut innings = Innings::new(batting_team, bowling_team);
+        let mut innings = Innings::new(batting_team.clone(), bowling_team);
 
-        let ball_outcome = create_test_ball_outcome(1, vec![BallEvents::NoBall(1)]);
+        let ball_outcome = create_test_ball_outcome(
+            1,
+            vec![BallEvents::NoBall(1)],
+            batting_team.players[0].clone(),
+            batting_team.players[1].clone(),
+        );
         innings.score_ball(&ball_outcome);
 
         assert_eq!(innings.score.runs, 2); // 1 run + 1 no ball
@@ -277,9 +333,14 @@ mod tests {
     fn test_score_ball_byes() {
         let batting_team = create_test_team("Team A");
         let bowling_team = create_test_team("Team B");
-        let mut innings = Innings::new(batting_team, bowling_team);
+        let mut innings = Innings::new(batting_team.clone(), bowling_team);
 
-        let ball_outcome = create_test_ball_outcome(2, vec![BallEvents::Bye(2)]);
+        let ball_outcome = create_test_ball_outcome(
+            2,
+            vec![BallEvents::Bye(2)],
+            batting_team.players[0].clone(),
+            batting_team.players[1].clone(),
+        );
         innings.score_ball(&ball_outcome);
 
         assert_eq!(innings.score.runs, 4); // 2 runs + 2 byes
@@ -291,9 +352,14 @@ mod tests {
     fn test_score_ball_leg_byes() {
         let batting_team = create_test_team("Team A");
         let bowling_team = create_test_team("Team B");
-        let mut innings = Innings::new(batting_team, bowling_team);
+        let mut innings = Innings::new(batting_team.clone(), bowling_team);
 
-        let ball_outcome = create_test_ball_outcome(1, vec![BallEvents::LegBye(1)]);
+        let ball_outcome = create_test_ball_outcome(
+            1,
+            vec![BallEvents::LegBye(1)],
+            batting_team.players[0].clone(),
+            batting_team.players[1].clone(),
+        );
         innings.score_ball(&ball_outcome);
 
         assert_eq!(innings.score.runs, 2); // 1 run + 1 leg bye
@@ -305,12 +371,17 @@ mod tests {
     fn test_score_ball_odd_runs_switch_strike() {
         let batting_team = create_test_team("Team A");
         let bowling_team = create_test_team("Team B");
-        let mut innings = Innings::new(batting_team, bowling_team);
+        let mut innings = Innings::new(batting_team.clone(), bowling_team);
 
         assert_eq!(innings.on_strike, 0);
         assert_eq!(innings.off_strike, 1);
 
-        let ball_outcome = create_test_ball_outcome(1, vec![]);
+        let ball_outcome = create_test_ball_outcome(
+            1,
+            vec![],
+            batting_team.players[0].clone(),
+            batting_team.players[1].clone(),
+        );
         innings.score_ball(&ball_outcome);
 
         // After odd runs, batsmen should switch
@@ -322,12 +393,17 @@ mod tests {
     fn test_score_ball_even_runs_no_switch() {
         let batting_team = create_test_team("Team A");
         let bowling_team = create_test_team("Team B");
-        let mut innings = Innings::new(batting_team, bowling_team);
+        let mut innings = Innings::new(batting_team.clone(), bowling_team);
 
         assert_eq!(innings.on_strike, 0);
         assert_eq!(innings.off_strike, 1);
 
-        let ball_outcome = create_test_ball_outcome(2, vec![]);
+        let ball_outcome = create_test_ball_outcome(
+            2,
+            vec![],
+            batting_team.players[0].clone(),
+            batting_team.players[1].clone(),
+        );
         innings.score_ball(&ball_outcome);
 
         // After even runs, batsmen should not switch
@@ -339,13 +415,18 @@ mod tests {
     fn test_score_ball_wicket_on_strike() {
         let batting_team = create_test_team("Team A");
         let bowling_team = create_test_team("Team B");
-        let mut innings = Innings::new(batting_team, bowling_team);
+        let mut innings = Innings::new(batting_team.clone(), bowling_team);
 
         let wicket = vec![Wicket {
             player_out: "Player1".to_string(),
             kind: "bowled".to_string(),
         }];
-        let ball_outcome = create_test_ball_outcome(0, vec![BallEvents::Wicket(wicket)]);
+        let ball_outcome = create_test_ball_outcome(
+            0,
+            vec![BallEvents::Wicket(wicket)],
+            batting_team.players[0].clone(),
+            batting_team.players[1].clone(),
+        );
         innings.score_ball(&ball_outcome);
 
         assert!(innings.batting_team.players[0].out);
@@ -362,13 +443,18 @@ mod tests {
     fn test_score_ball_wicket_off_strike() {
         let batting_team = create_test_team("Team A");
         let bowling_team = create_test_team("Team B");
-        let mut innings = Innings::new(batting_team, bowling_team);
+        let mut innings = Innings::new(batting_team.clone(), bowling_team);
 
         let wicket = vec![Wicket {
             player_out: "Player2".to_string(),
             kind: "run out".to_string(),
         }];
-        let ball_outcome = create_test_ball_outcome(0, vec![BallEvents::Wicket(wicket)]);
+        let ball_outcome = create_test_ball_outcome(
+            0,
+            vec![BallEvents::Wicket(wicket)],
+            batting_team.players[0].clone(),
+            batting_team.players[1].clone(),
+        );
         innings.score_ball(&ball_outcome);
 
         assert!(!innings.batting_team.players[0].out); // On-strike batsman is fine
@@ -399,10 +485,15 @@ mod tests {
     fn test_display_with_batting() {
         let batting_team = create_test_team("Team A");
         let bowling_team = create_test_team("Team B");
-        let mut innings = Innings::new(batting_team, bowling_team);
+        let mut innings = Innings::new(batting_team.clone(), bowling_team);
 
         // Score some runs
-        let ball_outcome = create_test_ball_outcome(4, vec![BallEvents::Four]);
+        let ball_outcome = create_test_ball_outcome(
+            4,
+            vec![BallEvents::Four],
+            batting_team.players[0].clone(),
+            batting_team.players[1].clone(),
+        );
         innings.score_ball(&ball_outcome);
 
         let display = format!("{}", innings);
@@ -415,30 +506,55 @@ mod tests {
     fn test_complex_scoring_scenario() {
         let batting_team = create_test_team("Team A");
         let bowling_team = create_test_team("Team B");
-        let mut innings = Innings::new(batting_team, bowling_team);
+        let mut innings = Innings::new(batting_team.clone(), bowling_team);
 
-        // Ball 1: 4 runs with boundary
-        let ball1 = create_test_ball_outcome(4, vec![BallEvents::Four]);
+        // Ball 1: 4 runs with boundary (Player1 on strike)
+        let ball1 = create_test_ball_outcome(
+            4,
+            vec![BallEvents::Four],
+            batting_team.players[0].clone(),
+            batting_team.players[1].clone(),
+        );
         innings.score_ball(&ball1);
 
-        // Ball 2: 6 runs with six
-        let ball2 = create_test_ball_outcome(6, vec![BallEvents::Six]);
+        // Ball 2: 6 runs with six (Player1 on strike)
+        let ball2 = create_test_ball_outcome(
+            6,
+            vec![BallEvents::Six],
+            batting_team.players[0].clone(),
+            batting_team.players[1].clone(),
+        );
         innings.score_ball(&ball2);
 
-        // Ball 3: 1 run (switches strike)
-        let ball3 = create_test_ball_outcome(1, vec![]);
+        // Ball 3: 1 run (Player1 on strike, switches to Player2)
+        let ball3 = create_test_ball_outcome(
+            1,
+            vec![],
+            batting_team.players[0].clone(),
+            batting_team.players[1].clone(),
+        );
         innings.score_ball(&ball3);
 
-        // Ball 4: Wide (no ball faced, no strike change)
-        let ball4 = create_test_ball_outcome(1, vec![BallEvents::Wide(1)]);
+        // Ball 4: Wide (Player2 on strike, no strike change)
+        let ball4 = create_test_ball_outcome(
+            1,
+            vec![BallEvents::Wide(1)],
+            batting_team.players[1].clone(),
+            batting_team.players[0].clone(),
+        );
         innings.score_ball(&ball4);
 
-        // Ball 5: Wicket
+        // Ball 5: Wicket (Player2 gets out)
         let wicket = vec![Wicket {
             player_out: "Player2".to_string(),
             kind: "caught".to_string(),
         }];
-        let ball5 = create_test_ball_outcome(0, vec![BallEvents::Wicket(wicket)]);
+        let ball5 = create_test_ball_outcome(
+            0,
+            vec![BallEvents::Wicket(wicket)],
+            batting_team.players[1].clone(),
+            batting_team.players[0].clone(),
+        );
         innings.score_ball(&ball5);
 
         // Verify final state
@@ -450,26 +566,40 @@ mod tests {
         assert_eq!(innings.batting_team.players[0].sixes, 1);
         assert_eq!(innings.batting_team.players[1].runs, 0); // Second batsman didn't score any runs
         assert!(innings.batting_team.players[1].out); // Second batsman is out
-        assert_eq!(innings.on_strike, 0); // First batsman stays on strike (wicket was off-strike)
-        assert_eq!(innings.off_strike, 2); // Third batsman comes in
+        assert_eq!(innings.on_strike, 2); // Third batsman comes in on strike
+        assert_eq!(innings.off_strike, 0); // First batsman at non-striker
     }
 
     #[test]
     fn test_multiple_overs() {
         let batting_team = create_test_team("Team A");
         let bowling_team = create_test_team("Team B");
-        let mut innings = Innings::new(batting_team, bowling_team);
+        let mut innings = Innings::new(batting_team.clone(), bowling_team);
 
-        // Complete first over
-        for _ in 0..6 {
-            let ball_outcome = create_test_ball_outcome(1, vec![]);
+        // Complete first over - alternating singles means strike switches each ball
+        for i in 0..6 {
+            let on_strike_player = if i % 2 == 0 { 0 } else { 1 };
+            let off_strike_player = if i % 2 == 0 { 1 } else { 0 };
+            let ball_outcome = create_test_ball_outcome(
+                1,
+                vec![],
+                batting_team.players[on_strike_player].clone(),
+                batting_team.players[off_strike_player].clone(),
+            );
             innings.score_ball(&ball_outcome);
         }
         innings.over();
 
-        // Complete second over
-        for _ in 0..6 {
-            let ball_outcome = create_test_ball_outcome(1, vec![]);
+        // Complete second over - after over(), strike switches, so P1 is on strike again
+        for i in 0..6 {
+            let on_strike_player = if i % 2 == 0 { 0 } else { 1 };
+            let off_strike_player = if i % 2 == 0 { 1 } else { 0 };
+            let ball_outcome = create_test_ball_outcome(
+                1,
+                vec![],
+                batting_team.players[on_strike_player].clone(),
+                batting_team.players[off_strike_player].clone(),
+            );
             innings.score_ball(&ball_outcome);
         }
         innings.over();
@@ -477,5 +607,38 @@ mod tests {
         assert_eq!(innings.score.runs, 12);
         assert_eq!(innings.score.over, 2);
         assert_eq!(innings.score.ball, 0);
+    }
+
+    #[test]
+    fn test_score_ball_trusts_ball_outcome_not_indices() {
+        // This test verifies the fix for the batter scoring bug
+        // Even if tracked indices are "wrong", the generic layer should trust BallOutcome player names
+        let batting_team = create_test_team("Team A");
+        let bowling_team = create_test_team("Team B");
+        let mut innings = Innings::new(batting_team.clone(), bowling_team);
+
+        // Manually set wrong indices (simulating drift/desync)
+        innings.on_strike = 2;
+        innings.off_strike = 3;
+
+        // But BallOutcome says Player1 and Player2 are actually batting
+        let ball_outcome = create_test_ball_outcome(
+            4,
+            vec![BallEvents::Four],
+            batting_team.players[0].clone(), // Player1 is on strike according to BallOutcome
+            batting_team.players[1].clone(), // Player2 is off strike according to BallOutcome
+        );
+        innings.score_ball(&ball_outcome);
+
+        // Verify runs are credited to Player1 (from BallOutcome), not Player3 (from indices)
+        assert_eq!(innings.batting_team.players[0].runs, 4); // Player1 gets the runs
+        assert_eq!(innings.batting_team.players[0].fours, 1);
+        assert_eq!(innings.batting_team.players[0].balls_faced, 1);
+        assert_eq!(innings.batting_team.players[2].runs, 0); // Player3 gets nothing
+        assert_eq!(innings.batting_team.players[2].balls_faced, 0);
+
+        // Verify indices are now corrected to match reality
+        assert_eq!(innings.on_strike, 0); // Corrected to Player1's index
+        assert_eq!(innings.off_strike, 1); // Corrected to Player2's index
     }
 }
