@@ -45,7 +45,7 @@ impl Innings {
             .unwrap();
         // Find the non-striker by name from the BallOutcome (source of truth)
         let non_striker_index = self
-            .bowling_team
+            .batting_team
             .get_player_index(&ball_outcome.off_strike.name)
             .unwrap();
 
