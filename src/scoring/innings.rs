@@ -54,7 +54,8 @@ impl Innings {
         // Update batting stats
         let striker = self.batting_team.players.get_mut(striker_index).unwrap();
 
-        if ball_outcome.wide.is_none() && ball_outcome.no_ball.is_none() {
+        // Counts to batters stats unless it's a wide
+        if ball_outcome.wide.is_none() {
             striker.balls_faced += 1;
             if ball_outcome.byes.is_none() && ball_outcome.leg_byes.is_none() {
                 striker.runs += ball_outcome.runs;
@@ -310,8 +311,8 @@ mod tests {
         innings.score_ball(&ball_outcome);
 
         assert_eq!(innings.score.runs, 2); // 1 run + 1 no ball
-        assert_eq!(innings.batting_team.players[0].balls_faced, 0); // No ball doesn't count as ball faced
-        assert_eq!(innings.batting_team.players[0].runs, 0); // No ball with runs but batsman doesn't face ball, so no runs credited
+        assert_eq!(innings.batting_team.players[0].balls_faced, 1); // No ball counts as ball faced
+        assert_eq!(innings.batting_team.players[0].runs, 1);
     }
 
     #[test]
