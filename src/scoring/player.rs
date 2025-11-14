@@ -113,17 +113,11 @@ impl Player {
 
 impl Team {
     pub fn get_player_index(&self, player_name: &str) -> Option<usize> {
-        self
-            .players
-            .iter()
-            .position(|p| p.name == player_name)
+        self.players.iter().position(|p| p.name == player_name)
     }
 
     pub fn get_player(&mut self, player_name: &str) -> Option<&mut Player> {
-        self
-            .players
-            .iter_mut()
-            .find(|p| p.name == player_name)
+        self.players.iter_mut().find(|p| p.name == player_name)
     }
 }
 

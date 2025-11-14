@@ -39,11 +39,13 @@ impl Innings {
         self.score.score_ball(ball_outcome);
 
         // Find the striker by name from the BallOutcome (source of truth)
-        let striker_index = self.batting_team
+        let striker_index = self
+            .batting_team
             .get_player_index(&ball_outcome.on_strike.name)
             .unwrap();
         // Find the non-striker by name from the BallOutcome (source of truth)
-        let non_striker_index = self.bowling_team
+        let non_striker_index = self
+            .bowling_team
             .get_player_index(&ball_outcome.off_strike.name)
             .unwrap();
 
@@ -69,8 +71,7 @@ impl Innings {
         }
 
         // Update bowling stats
-        if let Some(bowler) = self.bowling_team.get_player(&ball_outcome.bowler.name)
-        {
+        if let Some(bowler) = self.bowling_team.get_player(&ball_outcome.bowler.name) {
             // Count legal deliveries (not wides or no balls)
             if ball_outcome.wide.is_none() && ball_outcome.no_ball.is_none() {
                 bowler.balls_bowled += 1;
@@ -100,8 +101,10 @@ impl Innings {
         if ball_outcome.wicket.is_some() {
             for wicket in ball_outcome.wicket.as_ref().unwrap() {
                 // Find the player who got out by matching the name
-                let out_player_index = self.batting_team.get_player_index(&wicket.player_out)
-                .unwrap();
+                let out_player_index = self
+                    .batting_team
+                    .get_player_index(&wicket.player_out)
+                    .unwrap();
 
                 let out_player = self.batting_team.players.get_mut(out_player_index).unwrap();
                 out_player.out = true;
