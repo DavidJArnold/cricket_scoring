@@ -111,6 +111,22 @@ impl Player {
     }
 }
 
+impl Team {
+    pub fn get_player_index(&self, player_name: &str) -> Option<usize> {
+        self
+            .players
+            .iter()
+            .position(|p| p.name == player_name)
+    }
+
+    pub fn get_player(&mut self, player_name: &str) -> Option<&mut Player> {
+        self
+            .players
+            .iter_mut()
+            .find(|p| p.name == player_name)
+    }
+}
+
 impl fmt::Display for Player {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let mut parts = Vec::new();
